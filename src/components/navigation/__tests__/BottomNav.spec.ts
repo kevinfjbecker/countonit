@@ -59,5 +59,10 @@ describe('BottomNav.vue', () => {
 
     const tabList = wrapper.find('[role="tablist"]')
     expect(tabList.exists()).toBe(true)
+
+    const logTab = wrapper.find('[data-tab="log"]')
+    expect(logTab.attributes('id')).toBe('tab-log')
+    expect(logTab.attributes('aria-controls')).toBe('panel-log')
+    expect(logTab.attributes('aria-label')).toBe('Log occurrences')
   })
 })

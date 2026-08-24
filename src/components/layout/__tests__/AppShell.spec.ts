@@ -4,7 +4,7 @@ import AppShell from '../AppShell.vue'
 import type { NavTabId } from '@/types/navigation'
 
 describe('AppShell.vue', () => {
-  it('renders mobile-first responsive container', () => {
+  it('renders mobile-first responsive container with tabpanel roles', () => {
     const wrapper = mount(AppShell, {
       props: {
         activeTab: 'log' as NavTabId,
@@ -16,6 +16,11 @@ describe('AppShell.vue', () => {
 
     expect(wrapper.find('[data-testid="content"]').text()).toBe('Test Page Content')
     expect(wrapper.find('nav').exists()).toBe(true)
+
+    const panel = wrapper.find('main')
+    expect(panel.attributes('role')).toBe('tabpanel')
+    expect(panel.attributes('id')).toBe('panel-log')
+    expect(panel.attributes('aria-labelledby')).toBe('tab-log')
   })
 
   it('emits update:activeTab when navigation item is clicked', async () => {

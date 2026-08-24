@@ -10,7 +10,7 @@ import { LayoutDashboard } from 'lucide-vue-next'
     <div class="space-y-1">
       <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100">Dashboard & Trends</h2>
       <p class="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-        View daily point progress, streaks, 7-day trends, and category roll-ups.
+        View daily point progress, streaks, 7-day trends, and taxonomy roll-ups.
       </p>
     </div>
   </div>

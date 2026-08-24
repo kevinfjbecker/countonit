@@ -40,8 +40,14 @@ function onTabChange(tab: NavTabId) {
         </slot>
       </header>
 
-      <!-- Scrollable Main Content Area -->
-      <main class="flex-1 overflow-y-auto overscroll-contain relative p-4 bg-slate-50/50 dark:bg-slate-900/50">
+      <!-- Scrollable Main Content Area (Tabpanel) -->
+      <main
+        :id="`panel-${props.activeTab}`"
+        role="tabpanel"
+        :aria-labelledby="`tab-${props.activeTab}`"
+        tabindex="0"
+        class="flex-1 overflow-y-auto overscroll-contain relative p-4 bg-slate-50/50 dark:bg-slate-900/50 focus:outline-none"
+      >
         <slot />
       </main>
 

@@ -64,11 +64,13 @@ function selectTab(id: NavTabId) {
     >
       <button
         v-for="tab in tabs"
+        :id="`tab-${tab.id}`"
         :key="tab.id"
         :data-tab="tab.id"
         role="tab"
         :aria-selected="props.modelValue === tab.id"
-        :aria-label="tab.label"
+        :aria-controls="`panel-${tab.id}`"
+        :aria-label="tab.ariaLabel"
         type="button"
         class="flex flex-col items-center justify-center gap-1 transition-colors duration-150 relative py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
         :class="[
