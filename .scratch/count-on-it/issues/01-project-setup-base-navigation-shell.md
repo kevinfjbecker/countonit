@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Vite project configured with Vue 3, TypeScript, Tailwind CSS, and Lucide icons
-- [ ] Responsive mobile container centered on desktop with max-w-md width and mobile viewport ergonomics
-- [ ] Bottom navigation bar with 4 tabs (`Log`, `Dashboard`, `History`, `Settings`) showing active state
-- [ ] View routing/switching mechanism rendering placeholder components for each tab
+- [x] Vite project configured with Vue 3, TypeScript, Tailwind CSS, and Lucide icons
+- [x] Responsive mobile container centered on desktop with max-w-md width and mobile viewport ergonomics
+- [x] Bottom navigation bar with 4 tabs (`Log`, `Dashboard`, `History`, `Settings`) showing active state
+- [x] View routing/switching mechanism rendering placeholder components for each tab
