@@ -5,6 +5,7 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './', // links relative to the current directory (needed for repository GitHub Pages)
   plugins: [
     vue(),
     tailwindcss(),
