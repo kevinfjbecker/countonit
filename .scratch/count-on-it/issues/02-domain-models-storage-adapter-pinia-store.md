@@ -4,9 +4,10 @@
 
 **Blocked by:** 01: Project Setup & Base Navigation Shell
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] TypeScript interfaces defined for `EventType`, `Subtype`, `TaxonomyNode`, `Occurrence`, `Goal`, and `Streak` adhering to CONTEXT.md
-- [ ] `StorageAdapter` interface defined with `LocalStorageAdapter` for runtime and `InMemoryStorageAdapter` for testing
-- [ ] Pinia store configured to persist state changes through the storage adapter
-- [ ] Automated unit tests verifying storage read/write and state mutations
+- [x] TypeScript interfaces defined for `EventType`, `Subtype`, `TaxonomyNode`, `Occurrence`, `Goal`, and `Streak` adhering to CONTEXT.md
+- [x] `StorageAdapter` interface defined with `LocalStorageAdapter` for runtime and `InMemoryStorageAdapter` for testing
+- [x] Pinia store configured to persist state changes through the storage adapter
+- [x] Automated unit tests verifying storage read/write and state mutations
+
