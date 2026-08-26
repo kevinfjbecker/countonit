@@ -15,6 +15,7 @@ import type {
 } from '@/types/domain'
 import type { StorageAdapter, AppStatePayload } from '@/types/storage'
 import { STORAGE_KEY_APP_STATE, createDefaultStorageAdapter } from '@/storage'
+import { buildStarterSeed } from './seed'
 
 function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -232,6 +233,15 @@ export const useTrackerStore = defineStore('tracker', {
         this.occurrences = saved.occurrences || []
         this.goals = saved.goals || this.goals
         this.settings = saved.settings || this.settings
+      } else {
+        // First run: no data in storage — load the starter seed (spec §"Starter Seed Data")
+        const seed = buildStarterSeed()
+        this.eventTypes = seed.eventTypes
+        this.taxonomyNodes = seed.taxonomyNodes
+        this.occurrences = seed.occurrences
+        this.goals = seed.goals
+        this.settings = seed.settings
+        await this.saveToStorage()
       }
 
       this.isInitialized = true

@@ -13,15 +13,15 @@ describe('useTrackerStore', () => {
     inMemoryAdapter = new InMemoryStorageAdapter()
   })
 
-  it('initializes with empty state when storage is blank', async () => {
+  it('initializes with starter seed data when storage is blank (first run)', async () => {
     const store = useTrackerStore()
     await store.initialize(inMemoryAdapter)
 
     expect(store.isInitialized).toBe(true)
-    expect(store.eventTypes).toEqual([])
-    expect(store.taxonomyNodes).toEqual([])
-    expect(store.occurrences).toEqual([])
-    expect(store.goals.length).toBeGreaterThanOrEqual(1) // Default daily point goal (50)
+    expect(store.activeEventTypes.length).toBeGreaterThan(0) // Seeded starter event types
+    expect(store.taxonomyNodes.length).toBeGreaterThan(0)   // Seeded taxonomy nodes
+    expect(store.occurrences).toEqual([])                    // No occurrences on first run
+    expect(store.goals.length).toBeGreaterThanOrEqual(1)    // Default daily point goal (50)
     expect(store.dailyPointGoalValue).toBe(50)
   })
 
@@ -113,12 +113,11 @@ describe('useTrackerStore', () => {
     expect(created.id).toBeDefined()
     expect(created.name).toBe('Coffee')
     expect(created.basePoints).toBe(-2)
-    expect(store.eventTypes).toHaveLength(1)
+    expect(store.eventTypes.some(e => e.name === 'Coffee')).toBe(true)
 
-    // Verify persisted in storage
+    // Verify persisted in storage (5 seeded + 1 Coffee = 6)
     const persisted = await inMemoryAdapter.getItem<AppStatePayload>(STORAGE_KEY_APP_STATE)
-    expect(persisted?.eventTypes).toHaveLength(1)
-    expect(persisted?.eventTypes[0].name).toBe('Coffee')
+    expect(persisted?.eventTypes.some(e => e.name === 'Coffee')).toBe(true)
   })
 
   it('maintains Immutable Occurrence Snapshots when Event Type is updated (ADR 0002)', async () => {
@@ -212,14 +211,14 @@ describe('useTrackerStore', () => {
       defaultUnit: 'session'
     })
 
-    await store.logOccurrence({ eventTypeId: eventType.id })
+    const baseCount = store.activeEventTypes.length // 5 seeded + 'Floss' added above
 
-    expect(store.activeEventTypes).toHaveLength(1)
+    await store.logOccurrence({ eventTypeId: eventType.id })
 
     // Deleting an Event Type with linked occurrences should soft-archive it
     await store.deleteEventType(eventType.id)
 
-    expect(store.activeEventTypes).toHaveLength(0)
+    expect(store.activeEventTypes).toHaveLength(baseCount - 1)
     expect(store.archivedEventTypes).toHaveLength(1)
     expect(store.archivedEventTypes[0].id).toBe(eventType.id)
     expect(store.occurrences).toHaveLength(1) // Historical occurrences preserved
@@ -237,9 +236,9 @@ describe('useTrackerStore', () => {
       defaultUnit: 'time'
     })
 
-    expect(store.activeEventTypes).toHaveLength(1)
+    const baseCount = store.activeEventTypes.length // 5 seeded + 'Temporary Habit' added above
     await store.deleteEventType(eventType.id)
-    expect(store.activeEventTypes).toHaveLength(0)
+    expect(store.activeEventTypes).toHaveLength(baseCount - 1)
     expect(store.archivedEventTypes).toHaveLength(0)
   })
 
@@ -255,12 +254,14 @@ describe('useTrackerStore', () => {
       defaultUnit: 'chapter'
     })
 
+    const baseActive = store.activeEventTypes.length // 5 seeded + 'Reading' added above
+
     await store.archiveEventType(eventType.id)
-    expect(store.activeEventTypes).toHaveLength(0)
+    expect(store.activeEventTypes).toHaveLength(baseActive - 1)
     expect(store.archivedEventTypes).toHaveLength(1)
 
     await store.unarchiveEventType(eventType.id)
-    expect(store.activeEventTypes).toHaveLength(1)
+    expect(store.activeEventTypes).toHaveLength(baseActive)
     expect(store.archivedEventTypes).toHaveLength(0)
   })
 
@@ -275,7 +276,12 @@ describe('useTrackerStore', () => {
     await store.reorderEventTypes([e3.id, e1.id, e2.id])
 
     const names = store.activeEventTypes.map(e => e.name)
-    expect(names).toEqual(['C', 'A', 'B'])
+    // Verify the relative order of A, B, C is now C → A → B
+    const iA = names.indexOf('A')
+    const iB = names.indexOf('B')
+    const iC = names.indexOf('C')
+    expect(iC).toBeLessThan(iA)
+    expect(iA).toBeLessThan(iB)
   })
 
   it('manages hierarchical Taxonomy Nodes (ADR 0003)', async () => {
@@ -370,8 +376,7 @@ describe('useTrackerStore', () => {
 
     const exportData = store.exportState()
     expect(exportData.version).toBe(1)
-    expect(exportData.eventTypes).toHaveLength(1)
-    expect(exportData.eventTypes[0].name).toBe('Meditation')
+    expect(exportData.eventTypes.some(e => e.name === 'Meditation')).toBe(true)
 
     // Create a new fresh store with replacement data
     const newStore = useTrackerStore()
@@ -412,6 +417,115 @@ describe('useTrackerStore', () => {
     expect(newStore.eventTypes).toHaveLength(1)
     expect(newStore.eventTypes[0].name).toBe('Imported Routine')
     expect(newStore.dailyPointGoalValue).toBe(80)
+  })
+
+  describe('Starter Seed Data Loader', () => {
+    it('seeds starter event types on first run with empty storage', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      // Should have the 5 starter event types
+      expect(store.activeEventTypes.length).toBe(5)
+
+      const names = store.activeEventTypes.map(e => e.name)
+      expect(names).toContain('Glass of Water')
+      expect(names).toContain('Cup of Coffee')
+      expect(names).toContain('Set of 10 Push-ups')
+      expect(names).toContain('Floss Teeth')
+      expect(names).toContain('Haircut / Shave')
+    })
+
+    it('seeds starter taxonomy branches: Health > Hydration, Health > Fitness, Hygiene', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const nodeNames = store.taxonomyNodes.map(n => n.name)
+      expect(nodeNames).toContain('Health')
+      expect(nodeNames).toContain('Hydration')
+      expect(nodeNames).toContain('Fitness')
+      expect(nodeNames).toContain('Hygiene')
+
+      // Verify parent-child relationships
+      const health = store.taxonomyNodes.find(n => n.name === 'Health')
+      const hydration = store.taxonomyNodes.find(n => n.name === 'Hydration')
+      const fitness = store.taxonomyNodes.find(n => n.name === 'Fitness')
+      const hygiene = store.taxonomyNodes.find(n => n.name === 'Hygiene')
+
+      expect(health?.parentId).toBeNull()
+      expect(hydration?.parentId).toBe(health?.id)
+      expect(fitness?.parentId).toBe(health?.id)
+      expect(hygiene?.parentId).toBeNull()
+    })
+
+    it('seeds a 50-point daily goal', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      expect(store.dailyPointGoalValue).toBe(50)
+    })
+
+    it('wires event types to the correct taxonomy nodes', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const hydration = store.taxonomyNodes.find(n => n.name === 'Hydration')
+      const fitness = store.taxonomyNodes.find(n => n.name === 'Fitness')
+      const hygiene = store.taxonomyNodes.find(n => n.name === 'Hygiene')
+
+      const water = store.activeEventTypes.find(e => e.name === 'Glass of Water')
+      const coffee = store.activeEventTypes.find(e => e.name === 'Cup of Coffee')
+      const pushups = store.activeEventTypes.find(e => e.name === 'Set of 10 Push-ups')
+      const floss = store.activeEventTypes.find(e => e.name === 'Floss Teeth')
+      const haircut = store.activeEventTypes.find(e => e.name === 'Haircut / Shave')
+
+      expect(water?.taxonomyNodeId).toBe(hydration?.id)
+      expect(coffee?.taxonomyNodeId).toBe(hydration?.id)
+      expect(pushups?.taxonomyNodeId).toBe(fitness?.id)
+      expect(floss?.taxonomyNodeId).toBe(hygiene?.id)
+      expect(haircut?.taxonomyNodeId).toBe(hygiene?.id)
+    })
+
+    it('does not seed when storage already has data (not a first run)', async () => {
+      // Pre-populate storage with one event type
+      const existingState = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        eventTypes: [
+          {
+            id: 'existing-et',
+            name: 'My Custom Habit',
+            icon: 'Star',
+            colorBadge: 'violet',
+            basePoints: 5,
+            defaultUnit: 'session',
+            defaultIncrement: 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ],
+        taxonomyNodes: [],
+        occurrences: [],
+        goals: [],
+        settings: { theme: 'system' }
+      }
+
+      await inMemoryAdapter.setItem('countonit:v1:state', existingState)
+
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      // Should only have the pre-existing event type, not the seeded ones
+      expect(store.activeEventTypes).toHaveLength(1)
+      expect(store.activeEventTypes[0].name).toBe('My Custom Habit')
+    })
+
+    it('persists seed data to storage after first run', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const persisted = await inMemoryAdapter.getItem<{ eventTypes: unknown[] }>('countonit:v1:state')
+      expect(persisted?.eventTypes).toHaveLength(5)
+    })
   })
 
   it('calculates consecutive-day streaks correctly', async () => {
