@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] First-run detection logic checks if storage is uninitialized
-- [ ] Seeds default Event Types (Water, Coffee, Push-ups, Floss, Haircut) with icons, color badges, base points, and default units
-- [ ] Seeds sample Taxonomy Nodes (`Health`, `Health > Hydration`, `Health > Fitness`, `Hygiene`)
-- [ ] Seeds default 50-point Daily Point Goal
-- [ ] Unit tests verifying that seeding occurs once and preserves user modifications on subsequent runs
+- [x] First-run detection logic checks if storage is uninitialized
+- [x] Seeds default Event Types (Water, Coffee, Push-ups, Floss, Haircut) with icons, color badges, base points, and default units
+- [x] Seeds sample Taxonomy Nodes (`Health`, `Health > Hydration`, `Health > Fitness`, `Hygiene`)
+- [x] Seeds default 50-point Daily Point Goal
+- [x] Unit tests verifying that seeding occurs once and preserves user modifications on subsequent runs
