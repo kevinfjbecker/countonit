@@ -1,11 +1,21 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import App from '../App.vue'
+import { useTrackerStore } from '@/stores/tracker'
+import { InMemoryStorageAdapter } from '@/storage/InMemoryStorageAdapter'
 
 describe('App.vue', () => {
+  beforeEach(async () => {
+    setActivePinia(createPinia())
+    const store = useTrackerStore()
+    await store.initialize(new InMemoryStorageAdapter())
+  })
+
   it('defaults to rendering the LogView', () => {
     const wrapper = mount(App)
-    expect(wrapper.text()).toContain('Log Occurrences')
+    expect(wrapper.text()).toContain('Quick Log')
+    expect(wrapper.text()).toContain('Glass of Water')
   })
 
   it('switches views when clicking tabs in bottom navigation', async () => {
@@ -25,6 +35,6 @@ describe('App.vue', () => {
 
     // Switch back to Log
     await wrapper.find('[data-tab="log"]').trigger('click')
-    expect(wrapper.text()).toContain('Log Occurrences')
+    expect(wrapper.text()).toContain('Quick Log')
   })
 })
