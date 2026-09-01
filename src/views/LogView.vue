@@ -31,9 +31,19 @@ async function handleTap(eventType: EventType) {
       </div>
     </div>
 
+    <!-- Loading State while initializing -->
+    <div
+      v-if="!store.isInitialized"
+      class="flex flex-col items-center justify-center min-h-[300px] text-center p-8 space-y-3"
+      data-testid="loading-state"
+    >
+      <div class="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+      <p class="text-xs text-slate-400">Loading event types...</p>
+    </div>
+
     <!-- Empty State -->
     <div
-      v-if="activeEventTypes.length === 0"
+      v-else-if="activeEventTypes.length === 0"
       class="flex flex-col items-center justify-center min-h-[300px] text-center p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3"
     >
       <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 dark:text-indigo-400 flex items-center justify-center shadow-xs">

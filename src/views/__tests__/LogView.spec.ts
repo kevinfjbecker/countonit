@@ -30,6 +30,16 @@ describe('LogView', () => {
     expect(cards.length).toBe(5)
   })
 
+  it('shows loading state when store is not yet initialized', () => {
+    setActivePinia(createPinia())
+    const uninitializedStore = useTrackerStore()
+    expect(uninitializedStore.isInitialized).toBe(false)
+
+    const wrapper = mount(LogView)
+    expect(wrapper.find('[data-testid="loading-state"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Loading event types...')
+  })
+
   it('does not render archived event types in the grid', async () => {
     const water = store.eventTypes.find(e => e.id === 'seed-et-water')
     if (water) {
