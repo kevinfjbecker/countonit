@@ -1,18 +1,36 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { PlusCircle, Sparkles } from 'lucide-vue-next'
 import { useTrackerStore } from '@/stores/tracker'
-import type { EventType } from '@/types/domain'
+import type { EventType, Occurrence } from '@/types/domain'
 import EventCard from '@/components/events/EventCard.vue'
+import UndoToast from '@/components/feedback/UndoToast.vue'
 
 const store = useTrackerStore()
 
 const activeEventTypes = computed(() => store.activeEventTypes)
+const lastLoggedOccurrence = ref<Occurrence | null>(null)
+const showUndoToast = ref(false)
 
 async function handleTap(eventType: EventType) {
-  await store.logOccurrence({
+  const occurrence = await store.logOccurrence({
     eventTypeId: eventType.id
   })
+  if (occurrence) {
+    lastLoggedOccurrence.value = occurrence
+    showUndoToast.value = true
+  }
+}
+
+async function handleUndo(occurrenceId: string) {
+  await store.undoOccurrence(occurrenceId)
+  showUndoToast.value = false
+  lastLoggedOccurrence.value = null
+}
+
+function handleDismiss() {
+  showUndoToast.value = false
+  lastLoggedOccurrence.value = null
 }
 </script>
 
@@ -69,5 +87,15 @@ async function handleTap(eventType: EventType) {
         @tap="handleTap"
       />
     </div>
+
+    <!-- Undo Toast Notification -->
+    <UndoToast
+      v-model="showUndoToast"
+      :occurrence-id="lastLoggedOccurrence?.id"
+      :event-type-name="lastLoggedOccurrence?.snapshot.eventTypeName"
+      :points="lastLoggedOccurrence?.snapshot.calculatedPoints"
+      @undo="handleUndo"
+      @dismiss="handleDismiss"
+    />
   </div>
 </template>

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import LogView from '../LogView.vue'
 import { useTrackerStore } from '@/stores/tracker'
@@ -63,6 +63,7 @@ describe('LogView', () => {
     expect(waterButton.exists()).toBe(true)
 
     await waterButton.trigger('click')
+    await flushPromises()
 
     expect(store.occurrences.length).toBe(1)
     const logged = store.occurrences[0]
@@ -75,6 +76,60 @@ describe('LogView', () => {
       calculatedPoints: 5,
       taxonomyNodeId: 'seed-node-hydration'
     })
+  })
+
+  it('displays undo toast when an occurrence is logged and allows undoing it', async () => {
+    const wrapper = mount(LogView)
+
+    expect(wrapper.find('[data-testid="undo-toast"]').exists()).toBe(false)
+
+    // Tap Glass of Water (+5 pts)
+    const waterButton = wrapper.find('button[aria-label*="Glass of Water"]')
+    await waterButton.trigger('click')
+    await flushPromises()
+
+    // Toast should appear
+    expect(wrapper.find('[data-testid="undo-toast"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Logged Glass of Water')
+    expect(wrapper.text()).toContain('+5 pts')
+    expect(store.occurrences.length).toBe(1)
+
+    // Click Undo
+    const undoButton = wrapper.find('button[data-testid="undo-btn"]')
+    expect(undoButton.exists()).toBe(true)
+    await undoButton.trigger('click')
+    await flushPromises()
+
+    // Occurrence should be undone (removed)
+    expect(store.occurrences.length).toBe(0)
+    expect(wrapper.find('[data-testid="undo-toast"]').exists()).toBe(false)
+  })
+
+  it('updates undo toast when a subsequent card is tapped', async () => {
+    const wrapper = mount(LogView)
+
+    // Tap Water (+5 pts)
+    const waterButton = wrapper.find('button[aria-label*="Glass of Water"]')
+    await waterButton.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Logged Glass of Water')
+
+    // Tap Coffee (-2 pts)
+    const coffeeButton = wrapper.find('button[aria-label*="Cup of Coffee"]')
+    await coffeeButton.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Logged Cup of Coffee')
+    expect(wrapper.text()).toContain('-2 pts')
+    expect(store.occurrences.length).toBe(2)
+
+    // Undo should undo the most recent one (Coffee)
+    const undoButton = wrapper.find('button[data-testid="undo-btn"]')
+    await undoButton.trigger('click')
+    await flushPromises()
+
+    expect(store.occurrences.length).toBe(1)
+    expect(store.occurrences[0].snapshot.eventTypeName).toBe('Glass of Water')
   })
 
   it('displays empty state when no active event types exist', async () => {

@@ -4,10 +4,10 @@
 
 **Blocked by:** 04: 1-Tap Event Card Grid
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Visual tap animation (scale/pulse ripple) on the triggered Event Type card
-- [ ] Non-intrusive floating toast appears at bottom: "Logged [Event Name] (+X pts) — Undo"
-- [ ] 5-second auto-dismiss countdown timer with progress bar
-- [ ] Tapping "Undo" immediately deletes the recorded Occurrence from store and storage
-- [ ] Tests verifying undo toast lifecycle and deletion of the last occurrence
+- [x] Visual tap animation (scale/pulse ripple) on the triggered Event Type card
+- [x] Non-intrusive floating toast appears at bottom: "Logged [Event Name] (+X pts) — Undo"
+- [x] 5-second auto-dismiss countdown timer with progress bar
+- [x] Tapping "Undo" immediately deletes the recorded Occurrence from store and storage
+- [x] Tests verifying undo toast lifecycle and deletion of the last occurrence

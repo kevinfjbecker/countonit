@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import * as icons from 'lucide-vue-next'
 import { Activity } from 'lucide-vue-next'
 import type { EventType, ColorBadge } from '@/types/domain'
@@ -13,6 +13,9 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'tap', eventType: EventType): void
 }>()
+
+const isTapped = ref(false)
+let tapTimer: ReturnType<typeof setTimeout> | null = null
 
 const COLOR_CONFIGS: Record<
   ColorBadge,
@@ -92,8 +95,17 @@ const defaultUnitLabel = computed(() => {
 })
 
 function handleClick() {
+  isTapped.value = true
+  if (tapTimer) clearTimeout(tapTimer)
+  tapTimer = setTimeout(() => {
+    isTapped.value = false
+  }, 350)
   emit('tap', props.eventType)
 }
+
+onUnmounted(() => {
+  if (tapTimer) clearTimeout(tapTimer)
+})
 </script>
 
 <template>
@@ -101,20 +113,29 @@ function handleClick() {
     type="button"
     :aria-label="`Log ${eventType.name} (${formattedPoints})`"
     :class="[
-      'group relative flex flex-col justify-between w-full h-full min-h-[140px] p-4 text-left rounded-2xl',
+      'group relative flex flex-col justify-between w-full h-full min-h-[140px] p-4 text-left rounded-2xl overflow-hidden',
       'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md',
       'active:scale-[0.97] active:shadow-inner transition-all duration-150 ease-out select-none touch-manipulation cursor-pointer',
       'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950',
+      isTapped ? 'scale-95 ring-2 ring-indigo-500/60 dark:ring-indigo-400/60 shadow-inner' : '',
       colorConfig.cardBorderHover,
       colorConfig.activeRing
     ]"
     @click="handleClick"
   >
+    <!-- Visual Tap Ripple / Glow Feedback -->
+    <span
+      v-if="isTapped"
+      data-testid="tap-feedback"
+      class="pointer-events-none absolute inset-0 rounded-2xl bg-indigo-500/10 dark:bg-indigo-400/10 animate-pulse transition-opacity duration-300"
+    />
+
     <!-- Top Row: Icon & Point Badge -->
-    <div class="flex items-start justify-between w-full gap-2">
+    <div class="flex items-start justify-between w-full gap-2 relative z-10">
       <div
         :class="[
           'w-11 h-11 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 group-active:scale-95',
+          isTapped ? 'scale-110' : '',
           colorConfig.iconBg
         ]"
       >
@@ -132,7 +153,7 @@ function handleClick() {
     </div>
 
     <!-- Bottom Row: Name & Default Unit/Increment -->
-    <div class="mt-3 space-y-0.5">
+    <div class="mt-3 space-y-0.5 relative z-10">
       <div class="font-semibold text-sm text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug">
         {{ eventType.name }}
       </div>

@@ -70,6 +70,19 @@ describe('EventCard', () => {
     expect(wrapper.emitted('tap')![0]).toEqual([mockEventType])
   })
 
+  it('shows tap feedback animation overlay on click', async () => {
+    const wrapper = mount(EventCard, {
+      props: {
+        eventType: mockEventType
+      }
+    })
+
+    expect(wrapper.find('[data-testid="tap-feedback"]').exists()).toBe(false)
+    const button = wrapper.find('button')
+    await button.trigger('click')
+    expect(wrapper.find('[data-testid="tap-feedback"]').exists()).toBe(true)
+  })
+
   it('has accessible button attributes', () => {
     const wrapper = mount(EventCard, {
       props: {

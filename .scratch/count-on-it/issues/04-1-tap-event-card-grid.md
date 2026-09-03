@@ -4,10 +4,10 @@
 
 **Blocked by:** 03: Starter Seed Data Loader
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Mobile-first responsive card grid rendering all active Event Types
-- [ ] Each card clearly displays icon, title, point badge (+pts), and default unit
-- [ ] Single tap executes `recordOccurrence` creating an Occurrence with an immutable metadata snapshot
-- [ ] Visual press state on card tap
-- [ ] Unit/component tests verifying 1-tap logging creates correct immutable Occurrence records
+- [x] Mobile-first responsive card grid rendering all active Event Types
+- [x] Each card clearly displays icon, title, point badge (+pts), and default unit
+- [x] Single tap executes `recordOccurrence` creating an Occurrence with an immutable metadata snapshot
+- [x] Visual press state on card tap
+- [x] Unit/component tests verifying 1-tap logging creates correct immutable Occurrence records
