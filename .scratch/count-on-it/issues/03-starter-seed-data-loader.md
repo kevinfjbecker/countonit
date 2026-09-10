@@ -4,7 +4,7 @@
 
 **Blocked by:** 02: Domain Models, Storage Adapter & Pinia Store
 
-**Status:** ready-for-agent
+**Status:** completed
 
 - [x] First-run detection logic checks if storage is uninitialized
 - [x] Seeds default Event Types (Water, Coffee, Push-ups, Floss, Haircut) with icons, color badges, base points, and default units
