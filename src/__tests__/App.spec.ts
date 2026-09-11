@@ -28,7 +28,7 @@ describe('App.vue', () => {
 
     // Switch to History
     await wrapper.find('[data-tab="history"]').trigger('click')
-    expect(wrapper.text()).toContain('History Timeline')
+    expect(wrapper.text()).toContain('Activity History')
 
     // Switch to Settings
     await wrapper.find('[data-tab="settings"]').trigger('click')

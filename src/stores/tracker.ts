@@ -108,6 +108,12 @@ export const useTrackerStore = defineStore('tracker', {
       }
     },
 
+    sortedOccurrences: (state): Occurrence[] => {
+      return [...state.occurrences].sort((a, b) => {
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      })
+    },
+
     todayOccurrences: (state): Occurrence[] => {
       const todayStr = getLocalDateString(new Date())
       return state.occurrences.filter(
@@ -467,6 +473,11 @@ export const useTrackerStore = defineStore('tracker', {
     },
 
     async undoOccurrence(occurrenceId: string): Promise<void> {
+      this.occurrences = this.occurrences.filter(o => o.id !== occurrenceId)
+      await this.saveToStorage()
+    },
+
+    async deleteOccurrence(occurrenceId: string): Promise<void> {
       this.occurrences = this.occurrences.filter(o => o.id !== occurrenceId)
       await this.saveToStorage()
     },

@@ -596,5 +596,103 @@ describe('useTrackerStore', () => {
     expect(streak.currentStreak).toBe(3)
     expect(streak.longestStreak).toBe(3)
   })
+
+  it('provides sortedOccurrences ordered chronologically descending (newest first)', async () => {
+    const store = useTrackerStore()
+    await store.initialize(inMemoryAdapter)
+
+    const eventType = await store.addEventType({
+      name: 'Push-ups',
+      icon: 'Activity',
+      colorBadge: 'emerald',
+      basePoints: 10,
+      defaultUnit: 'set'
+    })
+
+    // Log occurrences out of order
+    const occMiddle = await store.logOccurrence({
+      eventTypeId: eventType.id,
+      timestamp: '2026-09-10T12:00:00.000Z'
+    })
+    const occOldest = await store.logOccurrence({
+      eventTypeId: eventType.id,
+      timestamp: '2026-09-08T12:00:00.000Z'
+    })
+    const occNewest = await store.logOccurrence({
+      eventTypeId: eventType.id,
+      timestamp: '2026-09-11T12:00:00.000Z'
+    })
+
+    expect(store.sortedOccurrences.map(o => o.id)).toEqual([
+      occNewest?.id,
+      occMiddle?.id,
+      occOldest?.id
+    ])
+  })
+
+  it('deletes an occurrence via deleteOccurrence and persists to storage', async () => {
+    const store = useTrackerStore()
+    await store.initialize(inMemoryAdapter)
+
+    const eventType = await store.addEventType({
+      name: 'Reading',
+      icon: 'Book',
+      colorBadge: 'violet',
+      basePoints: 5,
+      defaultUnit: 'page'
+    })
+
+    const occ = await store.logOccurrence({
+      eventTypeId: eventType.id,
+      quantity: 10
+    })
+
+    expect(store.occurrences).toHaveLength(1)
+
+    if (occ) {
+      await store.deleteOccurrence(occ.id)
+      expect(store.occurrences).toHaveLength(0)
+
+      const persisted = await inMemoryAdapter.getItem<AppStatePayload>(STORAGE_KEY_APP_STATE)
+      expect(persisted?.occurrences).toHaveLength(0)
+    }
+  })
+
+  it('updates timestamp on an occurrence and recalculates calculated points when quantity changes', async () => {
+    const store = useTrackerStore()
+    await store.initialize(inMemoryAdapter)
+
+    const eventType = await store.addEventType({
+      name: 'Water',
+      icon: 'Droplet',
+      colorBadge: 'sky',
+      basePoints: 5,
+      defaultUnit: 'glass'
+    })
+
+    const occ = await store.logOccurrence({
+      eventTypeId: eventType.id,
+      quantity: 1,
+      timestamp: '2026-09-01T10:00:00.000Z'
+    })
+
+    expect(occ?.snapshot.calculatedPoints).toBe(5)
+
+    if (occ) {
+      const updated = await store.updateOccurrence(occ.id, {
+        quantity: 4,
+        timestamp: '2026-09-02T15:30:00.000Z'
+      })
+
+      expect(updated?.quantity).toBe(4)
+      expect(updated?.timestamp).toBe('2026-09-02T15:30:00.000Z')
+      expect(updated?.snapshot.calculatedPoints).toBe(20) // 5 * 4
+
+      const inStore = store.occurrences.find(o => o.id === occ.id)
+      expect(inStore?.quantity).toBe(4)
+      expect(inStore?.timestamp).toBe('2026-09-02T15:30:00.000Z')
+      expect(inStore?.snapshot.calculatedPoints).toBe(20)
+    }
+  })
 })
 
