@@ -4,10 +4,10 @@
 
 **Blocked by:** 02: Domain Models, Storage Adapter & Pinia Store
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Event Type list in Settings showing all active Event Types with an "Add New" button
-- [ ] Editor form supporting:
+- [x] Event Type list in Settings showing all active Event Types with an "Add New" button
+- [x] Editor form supporting:
   - Name (text)
   - Icon/Emoji selector
   - Color badge selector (Emerald, Amber, Sky, Rose, Violet, Indigo, Slate)
@@ -16,5 +16,5 @@
   - Default Increment (default: 1)
   - Target Frequency (e.g. 8 times / day)
   - Taxonomy Node selector (optional)
-- [ ] Form validation (name required, valid point integer)
-- [ ] Saves to store and persists to storage adapter with automated tests
+- [x] Form validation (name required, valid point integer)
+- [x] Saves to store and persists to storage adapter with automated tests
