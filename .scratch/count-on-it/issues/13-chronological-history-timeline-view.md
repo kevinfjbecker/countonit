@@ -4,9 +4,9 @@
 
 **Blocked by:** 04: 1-Tap Event Card Grid
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] History view grouping Occurrences by date headers in descending order
-- [ ] Each Occurrence row renders time, Event Type icon, color badge, quantity, unit, subtype (if any), and points earned
-- [ ] Daily subtotal banner on each date section showing total points earned that day
-- [ ] Mobile-optimized scrolling with smooth performance
+- [x] History view grouping Occurrences by date headers in descending order
+- [x] Each Occurrence row renders time, Event Type icon, color badge, quantity, unit, subtype (if any), and points earned
+- [x] Daily subtotal banner on each date section showing total points earned that day
+- [x] Mobile-optimized scrolling with smooth performance
