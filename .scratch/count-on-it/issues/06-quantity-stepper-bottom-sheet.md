@@ -4,10 +4,11 @@
 
 **Blocked by:** 04: 1-Tap Event Card Grid
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Long-press gesture and dedicated "..." action menu trigger on Event Type cards
-- [ ] Mobile bottom sheet modal displaying Event Type details, stepper controls (`-`, `+`, direct input), and calculated total points
-- [ ] "Log [Quantity] [Unit] (+X pts)" confirmation button
-- [ ] Records Occurrence with the custom quantity and scaled points (`base_points * quantity`)
-- [ ] Tests verifying custom quantity calculation and recording
+- [x] Long-press gesture and dedicated "..." action menu trigger on Event Type cards
+- [x] Mobile bottom sheet modal displaying Event Type details, stepper controls (`-`, `+`, direct input), and calculated total points
+- [x] "Log [Quantity] [Unit] (+X pts)" confirmation button
+- [x] Records Occurrence with the custom quantity and scaled points (`base_points * quantity`)
+- [x] Tests verifying custom quantity calculation and recording
+

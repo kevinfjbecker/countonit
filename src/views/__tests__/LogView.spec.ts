@@ -140,4 +140,48 @@ describe('LogView', () => {
     const cards = wrapper.findAllComponents({ name: 'EventCard' })
     expect(cards.length).toBe(0)
   })
+
+  it('opens quantity stepper bottom sheet when custom quantity button is clicked and logs custom occurrence', async () => {
+    const wrapper = mount(LogView)
+
+    // Find the custom quantity button on the Pushups card
+    // In seed: Pushups has basePoints: 10, defaultIncrement: 1, unit: 'sets' (or similar)
+    const pushupsCard = wrapper.findAllComponents({ name: 'EventCard' }).find(c => c.text().includes('Push-ups'))
+    expect(pushupsCard).toBeDefined()
+
+    const moreBtn = pushupsCard!.find('[data-testid="custom-quantity-button"]')
+    expect(moreBtn.exists()).toBe(true)
+
+    await moreBtn.trigger('click')
+    await flushPromises()
+
+    // Quantity modal should be visible
+    const modal = wrapper.findComponent({ name: 'QuantityStepperModal' })
+    expect(modal.exists()).toBe(true)
+    expect(modal.props('modelValue')).toBe(true)
+
+    // Input custom quantity: 3
+    const input = modal.find<HTMLInputElement>('[data-testid="quantity-input"]')
+    await input.setValue('3')
+
+    // Submit form
+    const form = modal.find('form')
+    await form.trigger('submit.prevent')
+    await flushPromises()
+
+    // Modal should close
+    expect(modal.props('modelValue')).toBe(false)
+
+    // Store should have recorded the occurrence with quantity: 3 and scaled points
+    expect(store.occurrences.length).toBe(1)
+    const occ = store.occurrences[0]
+    expect(occ.quantity).toBe(3)
+    // Pushups base points: 10 => 10 * 3 = 30 pts
+    expect(occ.snapshot.calculatedPoints).toBe(30)
+
+    // Undo toast should show +30 pts
+    expect(wrapper.find('[data-testid="undo-toast"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('+30 pts')
+  })
 })
+

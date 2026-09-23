@@ -4,6 +4,7 @@ import { PlusCircle, Sparkles } from 'lucide-vue-next'
 import { useTrackerStore } from '@/stores/tracker'
 import type { EventType, Occurrence } from '@/types/domain'
 import EventCard from '@/components/events/EventCard.vue'
+import QuantityStepperModal from '@/components/events/QuantityStepperModal.vue'
 import UndoToast from '@/components/feedback/UndoToast.vue'
 
 const store = useTrackerStore()
@@ -11,6 +12,9 @@ const store = useTrackerStore()
 const activeEventTypes = computed(() => store.activeEventTypes)
 const lastLoggedOccurrence = ref<Occurrence | null>(null)
 const showUndoToast = ref(false)
+
+const selectedEventTypeForQuantity = ref<EventType | null>(null)
+const showQuantityModal = ref(false)
 
 async function handleTap(eventType: EventType) {
   const occurrence = await store.logOccurrence({
@@ -22,7 +26,30 @@ async function handleTap(eventType: EventType) {
   }
 }
 
+function handleCustomQuantity(eventType: EventType) {
+  selectedEventTypeForQuantity.value = eventType
+  showQuantityModal.value = true
+}
+
+async function handleQuantitySubmit({
+  eventType,
+  quantity
+}: {
+  eventType: EventType
+  quantity: number
+}) {
+  const occurrence = await store.logOccurrence({
+    eventTypeId: eventType.id,
+    quantity
+  })
+  if (occurrence) {
+    lastLoggedOccurrence.value = occurrence
+    showUndoToast.value = true
+  }
+}
+
 async function handleUndo(occurrenceId: string) {
+
   await store.undoOccurrence(occurrenceId)
   showUndoToast.value = false
   lastLoggedOccurrence.value = null
@@ -85,10 +112,19 @@ function handleDismiss() {
         :key="eventType.id"
         :event-type="eventType"
         @tap="handleTap"
+        @custom-quantity="handleCustomQuantity"
       />
     </div>
 
+    <!-- Quantity Stepper Bottom Sheet Modal -->
+    <QuantityStepperModal
+      v-model="showQuantityModal"
+      :event-type="selectedEventTypeForQuantity"
+      @submit="handleQuantitySubmit"
+    />
+
     <!-- Undo Toast Notification -->
+
     <UndoToast
       v-model="showUndoToast"
       :occurrence-id="lastLoggedOccurrence?.id"
