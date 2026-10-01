@@ -87,6 +87,14 @@ export interface Streak {
   isActiveToday: boolean
 }
 
+export interface ActiveStreakItem {
+  eventType: EventType
+  streak: Streak
+  todayQuantity: number
+  targetFrequency: number
+  isTargetMet: boolean
+}
+
 export interface AppSettings {
   theme: 'system' | 'light' | 'dark'
   hapticsEnabled?: boolean

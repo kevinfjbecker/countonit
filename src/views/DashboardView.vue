@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useTrackerStore } from '@/stores/tracker'
 import DailyPointsSummaryCard from '@/components/dashboard/DailyPointsSummaryCard.vue'
+import ActiveStreaksCard from '@/components/dashboard/ActiveStreaksCard.vue'
 
 const store = useTrackerStore()
 </script>
@@ -33,6 +34,9 @@ const store = useTrackerStore()
     <div v-else class="space-y-6">
       <!-- Top Summary Card: Daily Points & Circular Progress Ring -->
       <DailyPointsSummaryCard />
+
+      <!-- Active Streaks Card -->
+      <ActiveStreaksCard />
     </div>
   </div>
 </template>

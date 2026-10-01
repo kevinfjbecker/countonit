@@ -5,6 +5,7 @@ import type {
   Occurrence,
   Goal,
   Streak,
+  ActiveStreakItem,
   AppSettings,
   CreateEventTypeDto,
   UpdateEventTypeDto,
@@ -148,10 +149,48 @@ export const useTrackerStore = defineStore('tracker', {
       )
     },
 
+    activeStreaks(): ActiveStreakItem[] {
+      const activeTypes = this.activeEventTypes.filter(
+        e => e.targetFrequency !== null && e.targetFrequency !== undefined && e.targetFrequency > 0
+      )
+
+      return activeTypes
+        .map(eventType => {
+          const streak = this.calculateStreak(eventType.id)
+          const typeOccurrences = this.todayOccurrences.filter(
+            o => o.eventTypeId === eventType.id
+          )
+          const todayQuantity = typeOccurrences.reduce((sum, o) => sum + o.quantity, 0)
+          const targetFrequency = eventType.targetFrequency!
+          const isTargetMet = todayQuantity >= targetFrequency
+
+          return {
+            eventType,
+            streak,
+            todayQuantity,
+            targetFrequency,
+            isTargetMet
+          }
+        })
+        .sort((a, b) => b.streak.currentStreak - a.streak.currentStreak)
+    },
+
     calculateStreak: (state) => {
-      return (eventTypeId: string): Streak => {
+      return (eventTypeId: string, refDateInput: Date | string = new Date()): Streak => {
         const eventType = state.eventTypes.find(e => e.id === eventTypeId)
-        const target = eventType?.targetFrequency ?? 1
+        if (!eventType || !eventType.targetFrequency || eventType.targetFrequency <= 0) {
+          return {
+            eventTypeId,
+            currentStreak: 0,
+            longestStreak: 0,
+            lastAchievedDate: null,
+            isActiveToday: false
+          }
+        }
+        const target = eventType.targetFrequency
+
+        const refDateObj = typeof refDateInput === 'string' ? new Date(refDateInput) : refDateInput
+        const todayStr = getLocalDateString(refDateObj)
 
         // Filter occurrences for this event type
         const typeOccurrences = state.occurrences.filter(
@@ -174,12 +213,11 @@ export const useTrackerStore = defineStore('tracker', {
           }
         }
 
-        const todayStr = getLocalDateString(new Date())
         const isActiveToday = qualifyingDates.has(todayStr)
 
         // Calculate consecutive streak working backward from today or yesterday
         let currentStreak = 0
-        const checkDate = new Date()
+        const checkDate = new Date(refDateObj)
         let checkStr = getLocalDateString(checkDate)
 
         if (qualifyingDates.has(checkStr)) {
@@ -202,14 +240,13 @@ export const useTrackerStore = defineStore('tracker', {
         const sortedDates = Array.from(qualifyingDates).sort()
         let longestStreak = 0
         let tempStreak = 0
-        let prevDate: Date | null = null
+        let prevUtcTime: number | null = null
 
         for (const dateStr of sortedDates) {
-          const currentDate = new Date(dateStr)
-          if (prevDate) {
-            const diffDays = Math.round(
-              (currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)
-            )
+          const [y, m, d] = dateStr.split('-').map(Number)
+          const utcTime = Date.UTC(y, m - 1, d)
+          if (prevUtcTime !== null) {
+            const diffDays = Math.round((utcTime - prevUtcTime) / (1000 * 60 * 60 * 24))
             if (diffDays === 1) {
               tempStreak++
             } else if (diffDays > 1) {
@@ -221,7 +258,7 @@ export const useTrackerStore = defineStore('tracker', {
           if (tempStreak > longestStreak) {
             longestStreak = tempStreak
           }
-          prevDate = currentDate
+          prevUtcTime = utcTime
         }
 
         const lastAchievedDate =

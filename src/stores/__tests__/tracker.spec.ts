@@ -651,6 +651,56 @@ describe('useTrackerStore', () => {
     expect(streak.longestStreak).toBe(3)
   })
 
+  it('returns zero streak for event types without target frequency or with null targetFrequency', async () => {
+    const store = useTrackerStore()
+    await store.initialize(inMemoryAdapter)
+
+    const noTargetEt = await store.addEventType({
+      name: 'Coffee',
+      icon: 'Coffee',
+      colorBadge: 'amber',
+      basePoints: -2,
+      defaultUnit: 'cup',
+      targetFrequency: null
+    })
+
+    await store.logOccurrence({
+      eventTypeId: noTargetEt.id,
+      quantity: 5
+    })
+
+    const streak = store.calculateStreak(noTargetEt.id)
+    expect(streak.currentStreak).toBe(0)
+    expect(streak.longestStreak).toBe(0)
+    expect(streak.isActiveToday).toBe(false)
+  })
+
+  it('evaluates activeStreaks getter correctly for active target habits', async () => {
+    const store = useTrackerStore()
+    await store.initialize(inMemoryAdapter)
+
+    // Seed data has Glass of Water (targetFrequency: 8), Push-ups (3), Floss (1)
+    const water = store.eventTypes.find(e => e.name === 'Glass of Water')!
+    expect(water).toBeDefined()
+
+    // Log 8 glasses of water today
+    await store.logOccurrence({
+      eventTypeId: water.id,
+      quantity: 8
+    })
+
+    const activeStreaks = store.activeStreaks
+    expect(activeStreaks.length).toBeGreaterThan(0)
+
+    const waterStreak = activeStreaks.find(s => s.eventType.id === water.id)
+    expect(waterStreak).toBeDefined()
+    expect(waterStreak?.todayQuantity).toBe(8)
+    expect(waterStreak?.targetFrequency).toBe(8)
+    expect(waterStreak?.isTargetMet).toBe(true)
+    expect(waterStreak?.streak.currentStreak).toBe(1)
+    expect(waterStreak?.streak.isActiveToday).toBe(true)
+  })
+
   it('provides sortedOccurrences ordered chronologically descending (newest first)', async () => {
     const store = useTrackerStore()
     await store.initialize(inMemoryAdapter)

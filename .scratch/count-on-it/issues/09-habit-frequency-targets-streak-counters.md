@@ -4,9 +4,9 @@
 
 **Blocked by:** 04: 1-Tap Event Card Grid
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Streak calculation engine computing consecutive calendar days meeting target frequencies
-- [ ] Handles active streak vs broken streak vs streak achieved today
-- [ ] Streak card / carousel on Dashboard displaying active streaks with flame icons and current day count
-- [ ] Automated unit tests for consecutive streak counting across date boundaries, missed days, and multiple entries per day
+- [x] Streak calculation engine computing consecutive calendar days meeting target frequencies
+- [x] Handles active streak vs broken streak vs streak achieved today
+- [x] Streak card / carousel on Dashboard displaying active streaks with flame icons and current day count
+- [x] Automated unit tests for consecutive streak counting across date boundaries, missed days, and multiple entries per day
