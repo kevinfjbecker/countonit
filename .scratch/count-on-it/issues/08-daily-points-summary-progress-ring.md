@@ -4,10 +4,10 @@
 
 **Blocked by:** 04: 1-Tap Event Card Grid
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Reactive store getter computing total points accumulated for the current calendar day
-- [ ] Circular SVG progress ring visualizing progress toward the daily point goal
-- [ ] Visual celebration / completed state when daily goal is reached (100%+)
-- [ ] Reactive updates as Occurrences are logged or undone
-- [ ] Unit tests for daily point summation and percentage calculations
+- [x] Reactive store getter computing total points accumulated for the current calendar day
+- [x] Circular SVG progress ring visualizing progress toward the daily point goal
+- [x] Visual celebration / completed state when daily goal is reached (100%+)
+- [x] Reactive updates as Occurrences are logged or undone
+- [x] Unit tests for daily point summation and percentage calculations
