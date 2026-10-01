@@ -136,6 +136,18 @@ export const useTrackerStore = defineStore('tracker', {
       return this.dailyPointGoal?.targetValue ?? 50
     },
 
+    dailyPointProgressPercentage(): number {
+      if (this.dailyPointGoalValue <= 0) return 0
+      return Math.round((this.todayPoints / this.dailyPointGoalValue) * 100)
+    },
+
+    isDailyGoalAchieved(): boolean {
+      return (
+        this.dailyPointGoalValue > 0 &&
+        this.todayPoints >= this.dailyPointGoalValue
+      )
+    },
+
     calculateStreak: (state) => {
       return (eventTypeId: string): Streak => {
         const eventType = state.eventTypes.find(e => e.id === eventTypeId)

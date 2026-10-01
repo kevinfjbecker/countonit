@@ -349,6 +349,60 @@ describe('useTrackerStore', () => {
     }
   })
 
+  it('computes daily point progress percentage and goal achievement status reactively', async () => {
+    const store = useTrackerStore()
+    await store.initialize(inMemoryAdapter)
+
+    // Default target goal is 50, initial todayPoints is 0
+    expect(store.todayPoints).toBe(0)
+    expect(store.dailyPointGoalValue).toBe(50)
+    expect(store.dailyPointProgressPercentage).toBe(0)
+    expect(store.isDailyGoalAchieved).toBe(false)
+
+    const eventType = await store.addEventType({
+      name: 'Pushups',
+      icon: 'Activity',
+      colorBadge: 'emerald',
+      basePoints: 10,
+      defaultUnit: 'reps'
+    })
+
+    // Log 25 points (50% progress)
+    await store.logOccurrence({
+      eventTypeId: eventType.id,
+      quantity: 2.5
+    })
+    expect(store.todayPoints).toBe(25)
+    expect(store.dailyPointProgressPercentage).toBe(50)
+    expect(store.isDailyGoalAchieved).toBe(false)
+
+    // Log another 25 points (100% progress)
+    const occ2 = await store.logOccurrence({
+      eventTypeId: eventType.id,
+      quantity: 2.5
+    })
+    expect(store.todayPoints).toBe(50)
+    expect(store.dailyPointProgressPercentage).toBe(100)
+    expect(store.isDailyGoalAchieved).toBe(true)
+
+    // Log 10 more points (120% progress)
+    await store.logOccurrence({
+      eventTypeId: eventType.id,
+      quantity: 1
+    })
+    expect(store.todayPoints).toBe(60)
+    expect(store.dailyPointProgressPercentage).toBe(120)
+    expect(store.isDailyGoalAchieved).toBe(true)
+
+    // Undo occurrence, progress updates reactively back to 50
+    if (occ2) {
+      await store.undoOccurrence(occ2.id)
+      expect(store.todayPoints).toBe(35)
+      expect(store.dailyPointProgressPercentage).toBe(70)
+      expect(store.isDailyGoalAchieved).toBe(false)
+    }
+  })
+
   it('calculates daily points goal updates', async () => {
     const store = useTrackerStore()
     await store.initialize(inMemoryAdapter)

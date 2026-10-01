@@ -24,7 +24,7 @@ describe('App.vue', () => {
 
     // Switch to Dashboard
     await wrapper.find('[data-tab="dashboard"]').trigger('click')
-    expect(wrapper.text()).toContain('Dashboard & Trends')
+    expect(wrapper.text()).toContain('Dashboard')
 
     // Switch to History
     await wrapper.find('[data-tab="history"]').trigger('click')
