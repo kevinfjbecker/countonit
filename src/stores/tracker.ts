@@ -138,7 +138,7 @@ export const useTrackerStore = defineStore('tracker', {
 
     dailyPointProgressPercentage(): number {
       if (this.dailyPointGoalValue <= 0) return 0
-      return Math.round((this.todayPoints / this.dailyPointGoalValue) * 100)
+      return Math.floor((this.todayPoints / this.dailyPointGoalValue) * 100)
     },
 
     isDailyGoalAchieved(): boolean {

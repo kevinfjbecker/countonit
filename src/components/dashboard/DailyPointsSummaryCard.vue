@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { Sparkles, Trophy, Target, CheckCircle2 } from 'lucide-vue-next'
 import { useTrackerStore } from '@/stores/tracker'
 
 const store = useTrackerStore()
-
-const todayPoints = computed(() => store.todayPoints)
-const goalValue = computed(() => store.dailyPointGoalValue)
-const progressPercentage = computed(() => store.dailyPointProgressPercentage)
-const isGoalAchieved = computed(() => store.isDailyGoalAchieved)
+const {
+  todayPoints,
+  dailyPointGoalValue,
+  dailyPointProgressPercentage,
+  isDailyGoalAchieved
+} = storeToRefs(store)
 
 const pointsRemaining = computed(() => {
-  const diff = goalValue.value - todayPoints.value
-  return diff > 0 ? diff : 0
+  const remaining = dailyPointGoalValue.value - todayPoints.value
+  return remaining > 0 ? remaining : 0
 })
 
 // Circular SVG ring math
@@ -20,8 +22,8 @@ const radius = 52
 const circumference = 2 * Math.PI * radius
 
 const clampedRatio = computed(() => {
-  if (goalValue.value <= 0) return 0
-  return Math.min(Math.max(todayPoints.value / goalValue.value, 0), 1)
+  if (dailyPointGoalValue.value <= 0) return 0
+  return Math.min(Math.max(todayPoints.value / dailyPointGoalValue.value, 0), 1)
 })
 
 const strokeDashoffset = computed(() => {
@@ -38,7 +40,7 @@ const strokeDashoffset = computed(() => {
   >
     <!-- Background Glow Effect on Completion -->
     <div
-      v-if="isGoalAchieved"
+      v-if="isDailyGoalAchieved"
       class="absolute -right-12 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"
     />
 
@@ -49,12 +51,12 @@ const strokeDashoffset = computed(() => {
           <div
             :class="[
               'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
-              isGoalAchieved
+              isDailyGoalAchieved
                 ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400'
                 : 'bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400'
             ]"
           >
-            <Trophy v-if="isGoalAchieved" class="w-4 h-4" />
+            <Trophy v-if="isDailyGoalAchieved" class="w-4 h-4" />
             <Target v-else class="w-4 h-4" />
           </div>
           <div>
@@ -62,7 +64,7 @@ const strokeDashoffset = computed(() => {
               Daily Progress
             </h2>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              Target: <span class="font-medium text-slate-700 dark:text-slate-300">{{ goalValue }} pts</span>
+              Goal: <span class="font-medium text-slate-700 dark:text-slate-300">{{ dailyPointGoalValue }} pts</span>
             </p>
           </div>
         </div>
@@ -70,7 +72,7 @@ const strokeDashoffset = computed(() => {
         <!-- Status & Celebration Badges -->
         <div>
           <div
-            v-if="isGoalAchieved"
+            v-if="isDailyGoalAchieved"
             data-testid="goal-achieved-badge"
             class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-2xs animate-pulse"
           >
@@ -95,8 +97,8 @@ const strokeDashoffset = computed(() => {
           </div>
           <div class="h-6 w-px bg-slate-200 dark:bg-slate-800" />
           <div>
-            <span class="text-slate-400 dark:text-slate-500 block text-[11px]">Goal Score</span>
-            <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ goalValue }} pts</span>
+            <span class="text-slate-400 dark:text-slate-500 block text-[11px]">Daily Goal</span>
+            <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ dailyPointGoalValue }} pts</span>
           </div>
         </div>
       </div>
@@ -125,7 +127,7 @@ const strokeDashoffset = computed(() => {
             :r="radius"
             :class="[
               'transition-all duration-500 ease-out',
-              isGoalAchieved
+              isDailyGoalAchieved
                 ? 'stroke-emerald-500 dark:stroke-emerald-400'
                 : 'stroke-indigo-600 dark:stroke-indigo-400'
             ]"
@@ -142,15 +144,15 @@ const strokeDashoffset = computed(() => {
           <span
             :class="[
               'text-xl font-extrabold tracking-tight transition-colors',
-              isGoalAchieved
+              isDailyGoalAchieved
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-slate-900 dark:text-slate-100'
             ]"
           >
-            {{ progressPercentage }}%
+            {{ dailyPointProgressPercentage }}%
           </span>
           <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-            {{ todayPoints }} / {{ goalValue }}
+            {{ todayPoints }} / {{ dailyPointGoalValue }}
           </span>
         </div>
       </div>

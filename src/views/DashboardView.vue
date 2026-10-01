@@ -14,7 +14,7 @@ const store = useTrackerStore()
           <span>Dashboard</span>
         </h1>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Overview of daily goal score progress and habit performance
+          Overview of daily point progress and habit performance
         </p>
       </div>
     </div>
