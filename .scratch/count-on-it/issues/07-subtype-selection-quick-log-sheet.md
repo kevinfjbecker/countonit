@@ -4,9 +4,9 @@
 
 **Blocked by:** 06: Quantity Stepper Bottom Sheet
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Bottom sheet renders a Subtype selection list if the Event Type has configured Subtypes
-- [ ] Selecting a Subtype updates the previewed point value according to subtype override rules
-- [ ] Recording an Occurrence attaches the Subtype ID and snapshots the Subtype name and points
-- [ ] Tests verifying subtype point overrides and Occurrence snapshot recording
+- [x] Bottom sheet renders a Subtype selection list if the Event Type has configured Subtypes
+- [x] Selecting a Subtype updates the previewed point value according to subtype override rules
+- [x] Recording an Occurrence attaches the Subtype ID and snapshots the Subtype name and points
+- [x] Tests verifying subtype point overrides and Occurrence snapshot recording
