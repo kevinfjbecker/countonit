@@ -115,7 +115,8 @@ describe('QuantityStepperModal', () => {
     expect(wrapper.emitted('submit')![0]).toEqual([
       {
         eventType: mockEventType,
-        quantity: 35
+        quantity: 35,
+        subtypeId: null
       }
     ])
     expect(wrapper.emitted('update:modelValue')).toBeTruthy()
@@ -135,5 +136,156 @@ describe('QuantityStepperModal', () => {
 
     expect(wrapper.emitted('update:modelValue')).toBeTruthy()
     expect(wrapper.emitted('update:modelValue')![0]).toEqual([false])
+  })
+
+  it('renders subtype selection list when Event Type has configured Subtypes', () => {
+    const eventTypeWithSubtypes: EventType = {
+      ...mockEventType,
+      id: 'et-coffee',
+      name: 'Coffee',
+      basePoints: 2,
+      defaultUnit: 'cup',
+      defaultIncrement: 1,
+      subtypes: [
+        { id: 'sub-espresso', name: 'Espresso', pointOverride: 5 },
+        { id: 'sub-coldbrew', name: 'Cold Brew', pointOverride: 8, quantityOverride: 2 }
+      ]
+    }
+
+    const wrapper = mount(QuantityStepperModal, {
+      props: {
+        modelValue: true,
+        eventType: eventTypeWithSubtypes
+      }
+    })
+
+    expect(wrapper.find('[data-testid="subtype-selection"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="subtype-option-none"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="subtype-option-sub-espresso"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="subtype-option-sub-coldbrew"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Espresso')
+    expect(wrapper.text()).toContain('Cold Brew')
+  })
+
+  it('does not render subtype selection list when Event Type has no subtypes', () => {
+    const wrapper = mount(QuantityStepperModal, {
+      props: {
+        modelValue: true,
+        eventType: mockEventType
+      }
+    })
+
+    expect(wrapper.find('[data-testid="subtype-selection"]').exists()).toBe(false)
+  })
+
+  it('updates effective points and calculated points preview when a Subtype is selected', async () => {
+    const eventTypeWithSubtypes: EventType = {
+      ...mockEventType,
+      id: 'et-coffee',
+      name: 'Coffee',
+      basePoints: 2,
+      defaultUnit: 'cup',
+      defaultIncrement: 1,
+      subtypes: [
+        { id: 'sub-espresso', name: 'Espresso', pointOverride: 5 },
+        { id: 'sub-coldbrew', name: 'Cold Brew', pointOverride: 8, quantityOverride: 2 }
+      ]
+    }
+
+    const wrapper = mount(QuantityStepperModal, {
+      props: {
+        modelValue: true,
+        eventType: eventTypeWithSubtypes
+      }
+    })
+
+    // Initial base points is 2, quantity is 1 => +2 pts
+    const submitBtn = wrapper.find('[data-testid="quantity-submit-button"]')
+    expect(submitBtn.text()).toContain('Log 1 cup (+2 pts)')
+
+    // Click Espresso subtype (+5 pts override)
+    const espressoBtn = wrapper.find('[data-testid="subtype-option-sub-espresso"]')
+    await espressoBtn.trigger('click')
+
+    // Base point preview is now 5, quantity 1 => +5 pts
+    expect(submitBtn.text()).toContain('Log 1 cup (+5 pts)')
+
+    // Increase quantity to 3 => +15 pts (5 * 3)
+    const input = wrapper.find<HTMLInputElement>('[data-testid="quantity-input"]')
+    await input.setValue('3')
+    expect(submitBtn.text()).toContain('Log 3 cup (+15 pts)')
+
+    // Click Standard / None option -> reverts to base points 2 => +6 pts (2 * 3)
+    const standardBtn = wrapper.find('[data-testid="subtype-option-none"]')
+    await standardBtn.trigger('click')
+    expect(submitBtn.text()).toContain('Log 3 cup (+6 pts)')
+  })
+
+  it('updates quantity when a Subtype with quantityOverride is selected', async () => {
+    const eventTypeWithSubtypes: EventType = {
+      ...mockEventType,
+      id: 'et-coffee',
+      name: 'Coffee',
+      basePoints: 2,
+      defaultUnit: 'cup',
+      defaultIncrement: 1,
+      subtypes: [
+        { id: 'sub-coldbrew', name: 'Cold Brew', pointOverride: 8, quantityOverride: 2 }
+      ]
+    }
+
+    const wrapper = mount(QuantityStepperModal, {
+      props: {
+        modelValue: true,
+        eventType: eventTypeWithSubtypes
+      }
+    })
+
+    const input = wrapper.find<HTMLInputElement>('[data-testid="quantity-input"]')
+    expect(input.element.value).toBe('1')
+
+    // Click Cold Brew subtype (quantityOverride: 2, pointOverride: 8)
+    const coldbrewBtn = wrapper.find('[data-testid="subtype-option-sub-coldbrew"]')
+    await coldbrewBtn.trigger('click')
+
+    expect(input.element.value).toBe('2')
+    const submitBtn = wrapper.find('[data-testid="quantity-submit-button"]')
+    expect(submitBtn.text()).toContain('Log 2 cup (+16 pts)')
+  })
+
+  it('submits selected subtypeId along with eventType and quantity', async () => {
+    const eventTypeWithSubtypes: EventType = {
+      ...mockEventType,
+      id: 'et-coffee',
+      name: 'Coffee',
+      basePoints: 2,
+      defaultUnit: 'cup',
+      defaultIncrement: 1,
+      subtypes: [
+        { id: 'sub-espresso', name: 'Espresso', pointOverride: 5 }
+      ]
+    }
+
+    const wrapper = mount(QuantityStepperModal, {
+      props: {
+        modelValue: true,
+        eventType: eventTypeWithSubtypes
+      }
+    })
+
+    // Select Espresso
+    await wrapper.find('[data-testid="subtype-option-sub-espresso"]').trigger('click')
+
+    const form = wrapper.find('form')
+    await form.trigger('submit.prevent')
+
+    expect(wrapper.emitted('submit')).toBeTruthy()
+    expect(wrapper.emitted('submit')![0]).toEqual([
+      {
+        eventType: eventTypeWithSubtypes,
+        quantity: 1,
+        subtypeId: 'sub-espresso'
+      }
+    ])
   })
 })

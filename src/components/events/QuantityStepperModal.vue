@@ -13,10 +13,12 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'submit', payload: { eventType: EventType; quantity: number }): void
+  (e: 'submit', payload: { eventType: EventType; quantity: number; subtypeId?: string | null }): void
 }>()
 
 const quantity = ref<number>(1)
+const selectedSubtypeId = ref<string | null>(null)
+const isQuantityOverriddenBySubtype = ref(false)
 
 const COLOR_CONFIGS: Record<
   ColorBadge,
@@ -73,6 +75,8 @@ watch(
   (newVal) => {
     if (newVal) {
       quantity.value = newVal.defaultIncrement ?? 1
+      selectedSubtypeId.value = null
+      isQuantityOverriddenBySubtype.value = false
     }
   },
   { immediate: true }
@@ -83,14 +87,29 @@ watch(
   (isOpen) => {
     if (isOpen && props.eventType) {
       quantity.value = props.eventType.defaultIncrement ?? 1
+      selectedSubtypeId.value = null
+      isQuantityOverriddenBySubtype.value = false
     }
   }
 )
 
+const selectedSubtype = computed(() => {
+  if (!props.eventType || !props.eventType.subtypes || !selectedSubtypeId.value) return null
+  return props.eventType.subtypes.find(s => s.id === selectedSubtypeId.value) || null
+})
+
+const effectiveBasePoints = computed(() => {
+  if (!props.eventType) return 0
+  if (selectedSubtype.value && selectedSubtype.value.pointOverride !== undefined && selectedSubtype.value.pointOverride !== null) {
+    return selectedSubtype.value.pointOverride
+  }
+  return props.eventType.basePoints
+})
+
 const calculatedPoints = computed(() => {
   if (!props.eventType) return 0
   const qty = typeof quantity.value === 'number' && !isNaN(quantity.value) ? quantity.value : 0
-  return props.eventType.basePoints * qty
+  return effectiveBasePoints.value * qty
 })
 
 const formattedCalculatedPoints = computed(() => {
@@ -105,13 +124,37 @@ const submitButtonText = computed(() => {
   return `Log ${quantity.value} ${unit} (${formattedCalculatedPoints.value})`
 })
 
+
+
+function getSubtypePointsLabel(pts: number): string {
+  return pts > 0 ? `+${pts} pts` : `${pts} pts`
+}
+
+function selectSubtype(subtypeId: string | null) {
+  if (selectedSubtypeId.value === subtypeId) {
+    selectedSubtypeId.value = null
+  } else {
+    selectedSubtypeId.value = subtypeId
+  }
+
+  if (selectedSubtype.value && selectedSubtype.value.quantityOverride !== undefined && selectedSubtype.value.quantityOverride !== null) {
+    quantity.value = selectedSubtype.value.quantityOverride
+    isQuantityOverriddenBySubtype.value = true
+  } else if (isQuantityOverriddenBySubtype.value && props.eventType) {
+    quantity.value = props.eventType.defaultIncrement ?? 1
+    isQuantityOverriddenBySubtype.value = false
+  }
+}
+
 function handleIncrement() {
+  isQuantityOverriddenBySubtype.value = false
   const inc = props.eventType?.defaultIncrement ?? 1
   const current = typeof quantity.value === 'number' && !isNaN(quantity.value) ? quantity.value : 0
   quantity.value = Number((current + inc).toFixed(2))
 }
 
 function handleDecrement() {
+  isQuantityOverriddenBySubtype.value = false
   const inc = props.eventType?.defaultIncrement ?? 1
   const current = typeof quantity.value === 'number' && !isNaN(quantity.value) ? quantity.value : 0
   const next = Number((current - inc).toFixed(2))
@@ -121,6 +164,7 @@ function handleDecrement() {
 }
 
 function handleAddPreset(amount: number) {
+  isQuantityOverriddenBySubtype.value = false
   const current = typeof quantity.value === 'number' && !isNaN(quantity.value) ? quantity.value : 0
   quantity.value = Number((current + amount).toFixed(2))
 }
@@ -137,7 +181,8 @@ function handleSubmit() {
 
   emit('submit', {
     eventType: props.eventType,
-    quantity: validQuantity
+    quantity: validQuantity,
+    subtypeId: selectedSubtypeId.value
   })
   emit('update:modelValue', false)
 }
@@ -184,7 +229,7 @@ function handleBackdropClick(e: MouseEvent) {
               {{ eventType.name }}
             </h2>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              {{ eventType.basePoints > 0 ? `+${eventType.basePoints}` : eventType.basePoints }} pts / {{ eventType.defaultUnit }}
+              {{ effectiveBasePoints > 0 ? `+${effectiveBasePoints}` : effectiveBasePoints }} pts / {{ eventType.defaultUnit }}
             </p>
           </div>
         </div>
@@ -200,8 +245,57 @@ function handleBackdropClick(e: MouseEvent) {
         </button>
       </div>
 
-      <!-- Form Body: Stepper Controls & Recalculated Points -->
+      <!-- Form Body: Subtype Selection, Stepper Controls & Recalculated Points -->
       <form class="p-5 space-y-5 overflow-y-auto" @submit.prevent="handleSubmit">
+        <!-- Subtype Selection List (if configured) -->
+        <div
+          v-if="eventType.subtypes && eventType.subtypes.length > 0"
+          data-testid="subtype-selection"
+          class="space-y-2"
+        >
+          <div class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            Subtype
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <!-- Default / Standard Option -->
+            <button
+              type="button"
+              data-testid="subtype-option-none"
+              :class="[
+                'px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5',
+                selectedSubtypeId === null
+                  ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/70 dark:border-indigo-400 dark:text-indigo-300 font-semibold shadow-xs'
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              ]"
+              @click="selectSubtype(null)"
+            >
+              <span>Standard</span>
+              <span class="text-[10px] opacity-75">({{ getSubtypePointsLabel(eventType.basePoints) }})</span>
+            </button>
+
+            <!-- Configured Subtypes -->
+            <button
+              v-for="sub in eventType.subtypes"
+              :key="sub.id"
+              type="button"
+              :data-testid="`subtype-option-${sub.id}`"
+              :class="[
+                'px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5',
+                selectedSubtypeId === sub.id
+                  ? 'bg-indigo-50 border-indigo-500 text-indigo-700 dark:bg-indigo-950/70 dark:border-indigo-400 dark:text-indigo-300 font-semibold shadow-xs'
+                  : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              ]"
+              @click="selectSubtype(sub.id)"
+            >
+              <span>{{ sub.name }}</span>
+              <span class="text-[10px] opacity-75">
+                ({{ getSubtypePointsLabel(sub.pointOverride ?? eventType.basePoints) }})
+              </span>
+            </button>
+          </div>
+        </div>
+
         <!-- Quantity Stepper Control -->
         <div class="space-y-2">
           <div class="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -297,3 +391,4 @@ function handleBackdropClick(e: MouseEvent) {
     </div>
   </div>
 </template>
+

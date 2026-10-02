@@ -183,5 +183,49 @@ describe('LogView', () => {
     expect(wrapper.find('[data-testid="undo-toast"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('+30 pts')
   })
+
+  it('selects a Subtype in the quick-log sheet and logs occurrence with subtype snapshot and point override', async () => {
+    const wrapper = mount(LogView)
+
+    // Find Coffee card in starter seed (Cup of Coffee: basePoints -2, subtypes: Espresso [-1], Cold Brew [-3])
+    const coffeeCard = wrapper.findAllComponents({ name: 'EventCard' }).find(c => c.text().includes('Cup of Coffee'))
+    expect(coffeeCard).toBeDefined()
+
+    const moreBtn = coffeeCard!.find('[data-testid="custom-quantity-button"]')
+    await moreBtn.trigger('click')
+    await flushPromises()
+
+    const modal = wrapper.findComponent({ name: 'QuantityStepperModal' })
+    expect(modal.exists()).toBe(true)
+    expect(modal.find('[data-testid="subtype-selection"]').exists()).toBe(true)
+
+    // Select Espresso subtype (pointOverride: -1)
+    const espressoBtn = modal.find('[data-testid="subtype-option-seed-sub-espresso"]')
+    expect(espressoBtn.exists()).toBe(true)
+    await espressoBtn.trigger('click')
+
+    // Submit form with quantity = 2
+    const input = modal.find<HTMLInputElement>('[data-testid="quantity-input"]')
+    await input.setValue('2')
+
+    const form = modal.find('form')
+    await form.trigger('submit.prevent')
+    await flushPromises()
+
+    // Store occurrence check
+    expect(store.occurrences.length).toBe(1)
+    const occ = store.occurrences[0]
+    expect(occ.eventTypeId).toBe('seed-et-coffee')
+    expect(occ.subtypeId).toBe('seed-sub-espresso')
+    expect(occ.subtypeName).toBe('Espresso')
+    expect(occ.quantity).toBe(2)
+    expect(occ.snapshot.basePoints).toBe(-1)
+    expect(occ.snapshot.calculatedPoints).toBe(-2) // -1 * 2
+
+    // Undo toast should show -2 pts
+    expect(wrapper.find('[data-testid="undo-toast"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('-2 pts')
+  })
 })
+
 

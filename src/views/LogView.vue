@@ -33,14 +33,17 @@ function handleCustomQuantity(eventType: EventType) {
 
 async function handleQuantitySubmit({
   eventType,
-  quantity
+  quantity,
+  subtypeId
 }: {
   eventType: EventType
   quantity: number
+  subtypeId?: string | null
 }) {
   const occurrence = await store.logOccurrence({
     eventTypeId: eventType.id,
-    quantity
+    quantity,
+    subtypeId
   })
   if (occurrence) {
     lastLoggedOccurrence.value = occurrence
