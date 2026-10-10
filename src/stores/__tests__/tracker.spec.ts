@@ -893,5 +893,174 @@ describe('useTrackerStore', () => {
       expect(totalCountInWindow).toBe(0)
     })
   })
+
+  describe('Taxonomy Category Breakdown', () => {
+    it('returns empty breakdown list when no occurrences are logged for the date', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const breakdown = store.taxonomyCategoryBreakdown(new Date('2026-10-10T12:00:00'))
+      expect(breakdown).toEqual([])
+    })
+
+    it('aggregates points by direct root taxonomy node without double counting', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const rootNode = await store.addTaxonomyNode({
+        name: 'Hygiene',
+        color: 'violet'
+      })
+
+      const eventType = await store.addEventType({
+        name: 'Floss Teeth',
+        icon: 'Sparkles',
+        colorBadge: 'violet',
+        basePoints: 10,
+        defaultUnit: 'session',
+        taxonomyNodeId: rootNode.id
+      })
+
+      await store.logOccurrence({
+        eventTypeId: eventType.id,
+        quantity: 2,
+        timestamp: '2026-10-10T09:00:00'
+      })
+
+      const breakdown = store.taxonomyCategoryBreakdown(new Date('2026-10-10T12:00:00'))
+
+      expect(breakdown).toHaveLength(1)
+      expect(breakdown[0]).toEqual({
+        nodeId: rootNode.id,
+        name: 'Hygiene',
+        color: 'violet',
+        totalPoints: 20,
+        occurrenceCount: 1,
+        percentage: 100
+      })
+    })
+
+    it('rolls up points from child taxonomy nodes to parent root taxonomy nodes without double counting', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const parentNode = await store.addTaxonomyNode({
+        name: 'Health',
+        color: 'emerald'
+      })
+
+      const childNode1 = await store.addTaxonomyNode({
+        name: 'Hydration',
+        parentId: parentNode.id,
+        color: 'sky'
+      })
+
+      const childNode2 = await store.addTaxonomyNode({
+        name: 'Fitness',
+        parentId: parentNode.id,
+        color: 'emerald'
+      })
+
+      const waterType = await store.addEventType({
+        name: 'Glass of Water',
+        icon: 'Droplet',
+        colorBadge: 'sky',
+        basePoints: 5,
+        defaultUnit: 'glass',
+        taxonomyNodeId: childNode1.id
+      })
+
+      const pushupType = await store.addEventType({
+        name: 'Set of 10 Push-ups',
+        icon: 'Dumbbell',
+        colorBadge: 'emerald',
+        basePoints: 10,
+        defaultUnit: 'set',
+        taxonomyNodeId: childNode2.id
+      })
+
+      // Log 2 glasses of water (10 pts) and 3 sets of pushups (30 pts) today
+      await store.logOccurrence({
+        eventTypeId: waterType.id,
+        quantity: 2,
+        timestamp: '2026-10-10T08:00:00'
+      })
+
+      await store.logOccurrence({
+        eventTypeId: pushupType.id,
+        quantity: 3,
+        timestamp: '2026-10-10T09:00:00'
+      })
+
+      const breakdown = store.taxonomyCategoryBreakdown(new Date('2026-10-10T12:00:00'))
+
+      // Both child nodes roll up to parent "Health" node -> total 40 pts, 2 occurrences
+      expect(breakdown).toHaveLength(1)
+      expect(breakdown[0].nodeId).toBe(parentNode.id)
+      expect(breakdown[0].name).toBe('Health')
+      expect(breakdown[0].color).toBe('emerald')
+      expect(breakdown[0].totalPoints).toBe(40)
+      expect(breakdown[0].occurrenceCount).toBe(2)
+      expect(breakdown[0].percentage).toBe(100)
+    })
+
+    it('handles unassigned event types gracefully under an "Other / General" category', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const rootNode = await store.addTaxonomyNode({
+        name: 'Health',
+        color: 'emerald'
+      })
+
+      const healthType = await store.addEventType({
+        name: 'Pushups',
+        icon: 'Dumbbell',
+        colorBadge: 'emerald',
+        basePoints: 30,
+        defaultUnit: 'set',
+        taxonomyNodeId: rootNode.id
+      })
+
+      const unassignedType = await store.addEventType({
+        name: 'Random Habit',
+        icon: 'Activity',
+        colorBadge: 'slate',
+        basePoints: 10,
+        defaultUnit: 'time',
+        taxonomyNodeId: null
+      })
+
+      await store.logOccurrence({
+        eventTypeId: healthType.id,
+        quantity: 1,
+        timestamp: '2026-10-10T10:00:00'
+      })
+
+      await store.logOccurrence({
+        eventTypeId: unassignedType.id,
+        quantity: 1,
+        timestamp: '2026-10-10T11:00:00'
+      })
+
+      const breakdown = store.taxonomyCategoryBreakdown(new Date('2026-10-10T12:00:00'))
+
+      expect(breakdown).toHaveLength(2)
+
+      const healthCategory = breakdown.find(b => b.nodeId === rootNode.id)
+      const otherCategory = breakdown.find(b => b.nodeId === 'unassigned')
+
+      expect(healthCategory).toBeDefined()
+      expect(healthCategory?.name).toBe('Health')
+      expect(healthCategory?.totalPoints).toBe(30)
+      expect(healthCategory?.percentage).toBe(75)
+
+      expect(otherCategory).toBeDefined()
+      expect(otherCategory?.name).toBe('Other / General')
+      expect(otherCategory?.totalPoints).toBe(10)
+      expect(otherCategory?.percentage).toBe(25)
+    })
+  })
 })
+
 

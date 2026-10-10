@@ -3,6 +3,7 @@ import { useTrackerStore } from '@/stores/tracker'
 import DailyPointsSummaryCard from '@/components/dashboard/DailyPointsSummaryCard.vue'
 import SevenDayTrendCard from '@/components/dashboard/SevenDayTrendCard.vue'
 import ActiveStreaksCard from '@/components/dashboard/ActiveStreaksCard.vue'
+import TaxonomyCategoryBreakdownCard from '@/components/dashboard/TaxonomyCategoryBreakdownCard.vue'
 
 const store = useTrackerStore()
 </script>
@@ -41,6 +42,9 @@ const store = useTrackerStore()
 
       <!-- Active Streaks Card -->
       <ActiveStreaksCard />
+
+      <!-- Taxonomy Category Breakdown Card -->
+      <TaxonomyCategoryBreakdownCard />
     </div>
   </div>
 </template>

@@ -7,6 +7,7 @@ import type {
   Streak,
   ActiveStreakItem,
   DayTrendItem,
+  TaxonomyCategoryBreakdownItem,
   AppSettings,
   CreateEventTypeDto,
   UpdateEventTypeDto,
@@ -327,6 +328,125 @@ export const useTrackerStore = defineStore('tracker', {
         }
 
         return results
+      }
+    },
+
+    getRootTaxonomyNode: (state) => {
+      return (nodeId?: string | null): TaxonomyNode | null => {
+        if (!nodeId) return null
+        let currentId: string | null | undefined = nodeId
+        const visited = new Set<string>()
+        let lastNode: TaxonomyNode | null = null
+
+        while (currentId && !visited.has(currentId)) {
+          visited.add(currentId)
+          const node = state.taxonomyNodes.find(n => n.id === currentId)
+          if (!node) break
+          lastNode = node
+          currentId = node.parentId
+        }
+
+        return lastNode
+      }
+    },
+
+    taxonomyCategoryBreakdown: (state) => {
+      return (refDateInput: Date | string = new Date()): TaxonomyCategoryBreakdownItem[] => {
+        const refDateObj = typeof refDateInput === 'string' ? new Date(refDateInput) : refDateInput
+        const dateStr = getLocalDateString(refDateObj)
+
+        const dateOccurrences = state.occurrences.filter(
+          occ => getLocalDateString(occ.timestamp) === dateStr
+        )
+
+        if (dateOccurrences.length === 0) {
+          return []
+        }
+
+        const categoryMap = new Map<
+          string,
+          { node: TaxonomyNode | null; totalPoints: number; occurrenceCount: number }
+        >()
+
+        for (const occ of dateOccurrences) {
+          const rawNodeId =
+            occ.snapshot.taxonomyNodeId !== undefined
+              ? occ.snapshot.taxonomyNodeId
+              : (state.eventTypes.find(e => e.id === occ.eventTypeId)?.taxonomyNodeId ?? null)
+
+          let rootNode: TaxonomyNode | null = null
+          if (rawNodeId) {
+            let currentId: string | null | undefined = rawNodeId
+            const visited = new Set<string>()
+            while (currentId && !visited.has(currentId)) {
+              visited.add(currentId)
+              const node = state.taxonomyNodes.find(n => n.id === currentId)
+              if (!node) break
+              rootNode = node
+              currentId = node.parentId
+            }
+          }
+
+          const key = rootNode ? rootNode.id : 'unassigned'
+
+          if (!categoryMap.has(key)) {
+            categoryMap.set(key, {
+              node: rootNode,
+              totalPoints: 0,
+              occurrenceCount: 0
+            })
+          }
+
+          const entry = categoryMap.get(key)!
+          entry.totalPoints += occ.snapshot.calculatedPoints || 0
+          entry.occurrenceCount += 1
+        }
+
+        const positivePointsSum = Array.from(categoryMap.values()).reduce(
+          (sum, item) => sum + Math.max(0, item.totalPoints),
+          0
+        )
+        const totalPointsSum = Array.from(categoryMap.values()).reduce(
+          (sum, item) => sum + item.totalPoints,
+          0
+        )
+        const totalOccurrencesSum = Array.from(categoryMap.values()).reduce(
+          (sum, item) => sum + item.occurrenceCount,
+          0
+        )
+
+        const baseForPercentage =
+          positivePointsSum > 0 ? positivePointsSum : totalPointsSum > 0 ? totalPointsSum : 0
+
+        const results: TaxonomyCategoryBreakdownItem[] = []
+
+        for (const [key, entry] of categoryMap.entries()) {
+          let percentage = 0
+          if (baseForPercentage > 0 && entry.totalPoints > 0) {
+            percentage = Math.round((entry.totalPoints / baseForPercentage) * 100)
+          } else if (baseForPercentage === 0 && totalOccurrencesSum > 0) {
+            percentage = Math.round((entry.occurrenceCount / totalOccurrencesSum) * 100)
+          }
+
+          results.push({
+            nodeId: key,
+            name: entry.node ? entry.node.name : 'Other / General',
+            color: entry.node?.color || 'slate',
+            totalPoints: entry.totalPoints,
+            occurrenceCount: entry.occurrenceCount,
+            percentage
+          })
+        }
+
+        return results.sort((a, b) => {
+          if (b.totalPoints !== a.totalPoints) {
+            return b.totalPoints - a.totalPoints
+          }
+          if (b.occurrenceCount !== a.occurrenceCount) {
+            return b.occurrenceCount - a.occurrenceCount
+          }
+          return a.name.localeCompare(b.name)
+        })
       }
     }
   },

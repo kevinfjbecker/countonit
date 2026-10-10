@@ -112,6 +112,15 @@ export interface AppSettings {
   confettiEnabled?: boolean
 }
 
+export interface TaxonomyCategoryBreakdownItem {
+  nodeId: string // Root TaxonomyNode ID or 'unassigned'
+  name: string // TaxonomyNode name or 'Other / General'
+  color: ColorBadge
+  totalPoints: number
+  occurrenceCount: number
+  percentage: number // 0 to 100
+}
+
 // Data Transfer Objects (DTOs) for mutations
 export interface CreateEventTypeDto {
   name: string

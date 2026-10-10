@@ -4,9 +4,9 @@
 
 **Blocked by:** 08: Daily Points Summary & Circular Progress Ring
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Domain logic aggregating points by Taxonomy Node (and unassigned category) without double counting
-- [ ] Visual category distribution list with colored progress bars, point subtotals, and percentage of daily total
-- [ ] Handles unassigned Event Types gracefully under an "Other / General" category
-- [ ] Unit tests verifying accurate point roll-ups across parent/child taxonomy nodes
+- [x] Domain logic aggregating points by Taxonomy Node (and unassigned category) without double counting
+- [x] Visual category distribution list with colored progress bars, point subtotals, and percentage of daily total
+- [x] Handles unassigned Event Types gracefully under an "Other / General" category
+- [x] Unit tests verifying accurate point roll-ups across parent/child taxonomy nodes
