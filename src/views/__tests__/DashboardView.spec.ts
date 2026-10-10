@@ -18,7 +18,7 @@ describe('DashboardView.vue', () => {
     expect(wrapper.find('[data-testid="loading-state"]').exists()).toBe(true)
   })
 
-  it('renders DailyPointsSummaryCard when store is initialized', async () => {
+  it('renders DailyPointsSummaryCard and SevenDayTrendCard when store is initialized', async () => {
     const store = useTrackerStore()
     await store.initialize(inMemoryAdapter)
 
@@ -26,5 +26,6 @@ describe('DashboardView.vue', () => {
 
     expect(wrapper.find('[data-testid="loading-state"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="daily-points-summary-card"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="seven-day-trend-card"]').exists()).toBe(true)
   })
 })

@@ -6,6 +6,7 @@ import type {
   Goal,
   Streak,
   ActiveStreakItem,
+  DayTrendItem,
   AppSettings,
   CreateEventTypeDto,
   UpdateEventTypeDto,
@@ -271,6 +272,61 @@ export const useTrackerStore = defineStore('tracker', {
           lastAchievedDate,
           isActiveToday
         }
+      }
+    },
+
+    sevenDayTrend: (state) => {
+      return (refDateInput: Date | string = new Date()): DayTrendItem[] => {
+        const refDate = typeof refDateInput === 'string' ? new Date(refDateInput) : refDateInput
+        const goal = state.goals.find(g => g.type === 'daily_points')
+        const goalValue = goal?.targetValue ?? 50
+
+        // Group points and occurrence count by local YYYY-MM-DD
+        const countsByDate = new Map<string, { points: number; count: number }>()
+        for (const occ of state.occurrences) {
+          const dateStr = getLocalDateString(occ.timestamp)
+          const current = countsByDate.get(dateStr) ?? { points: 0, count: 0 }
+          countsByDate.set(dateStr, {
+            points: current.points + (occ.snapshot.calculatedPoints || 0),
+            count: current.count + 1
+          })
+        }
+
+        const todayStr = getLocalDateString(new Date())
+        const refDateStr = getLocalDateString(refDate)
+        const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+        const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+        const results: DayTrendItem[] = []
+
+        // 7 calendar days ending at refDate (6 days ago through refDate)
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate() - i)
+          const dateStr = getLocalDateString(d)
+
+          const dayOfWeekIdx = d.getDay()
+          const dayLabel = daysOfWeek[dayOfWeekIdx]
+          const dayOfWeek = shortDays[dayOfWeekIdx]
+          const formattedDate = `${monthNames[d.getMonth()]} ${d.getDate()}`
+
+          const entry = countsByDate.get(dateStr) ?? { points: 0, count: 0 }
+          const isGoalMet = goalValue > 0 && entry.points >= goalValue
+          const isToday = dateStr === todayStr || dateStr === refDateStr
+
+          results.push({
+            date: dateStr,
+            dayLabel,
+            dayOfWeek,
+            formattedDate,
+            totalPoints: entry.points,
+            occurrenceCount: entry.count,
+            isGoalMet,
+            isToday
+          })
+        }
+
+        return results
       }
     }
   },

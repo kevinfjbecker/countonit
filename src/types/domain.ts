@@ -95,6 +95,17 @@ export interface ActiveStreakItem {
   isTargetMet: boolean
 }
 
+export interface DayTrendItem {
+  date: string // YYYY-MM-DD
+  dayLabel: string // Single letter day label (e.g. 'M', 'T', 'W', 'T', 'F', 'S', 'S')
+  dayOfWeek: string // Short day name (e.g. 'Mon', 'Tue')
+  formattedDate: string // Formatted string (e.g. 'Oct 10')
+  totalPoints: number
+  occurrenceCount: number
+  isGoalMet: boolean
+  isToday: boolean
+}
+
 export interface AppSettings {
   theme: 'system' | 'light' | 'dark'
   hapticsEnabled?: boolean

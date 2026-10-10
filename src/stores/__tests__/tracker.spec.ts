@@ -798,5 +798,100 @@ describe('useTrackerStore', () => {
       expect(inStore?.snapshot.calculatedPoints).toBe(20)
     }
   })
+
+  describe('sevenDayTrend getter', () => {
+    it('aggregates total points and occurrence counts across the last 7 calendar days', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const refDate = new Date('2026-10-10T12:00:00')
+
+      const eventType = await store.addEventType({
+        name: 'Workout',
+        icon: 'Dumbbell',
+        colorBadge: 'emerald',
+        basePoints: 30,
+        defaultUnit: 'session'
+      })
+
+      // Log 2 occurrences on 2026-10-10 (refDate) -> 60 pts total
+      await store.logOccurrence({
+        eventTypeId: eventType.id,
+        quantity: 1,
+        timestamp: '2026-10-10T10:00:00'
+      })
+      await store.logOccurrence({
+        eventTypeId: eventType.id,
+        quantity: 1,
+        timestamp: '2026-10-10T11:00:00'
+      })
+
+      // Log 1 occurrence on 2026-10-08 (2 days ago) -> 30 pts
+      await store.logOccurrence({
+        eventTypeId: eventType.id,
+        quantity: 1,
+        timestamp: '2026-10-08T15:00:00'
+      })
+
+      const trend = store.sevenDayTrend(refDate)
+
+      expect(trend).toHaveLength(7)
+      expect(trend[0].date).toBe('2026-10-04')
+      expect(trend[6].date).toBe('2026-10-10')
+
+      // Oct 10 (day 6) should have 60 points and 2 occurrences, goal met (60 >= 50)
+      expect(trend[6].totalPoints).toBe(60)
+      expect(trend[6].occurrenceCount).toBe(2)
+      expect(trend[6].isGoalMet).toBe(true)
+
+      // Oct 8 (day 4) should have 30 points and 1 occurrence, goal not met (30 < 50)
+      expect(trend[4].totalPoints).toBe(30)
+      expect(trend[4].occurrenceCount).toBe(1)
+      expect(trend[4].isGoalMet).toBe(false)
+
+      // Oct 9 (day 5) should have 0 points and 0 occurrences
+      expect(trend[5].totalPoints).toBe(0)
+      expect(trend[5].occurrenceCount).toBe(0)
+      expect(trend[5].isGoalMet).toBe(false)
+    })
+
+    it('excludes occurrences outside the 7-day window (e.g. older than 6 days ago or future dates)', async () => {
+      const store = useTrackerStore()
+      await store.initialize(inMemoryAdapter)
+
+      const refDate = new Date('2026-10-10T12:00:00')
+
+      const eventType = await store.addEventType({
+        name: 'Running',
+        icon: 'Flame',
+        colorBadge: 'rose',
+        basePoints: 20,
+        defaultUnit: 'km'
+      })
+
+      // Log occurrence 7 days ago (2026-10-03, outside 7-day window of 2026-10-04 to 2026-10-10)
+      await store.logOccurrence({
+        eventTypeId: eventType.id,
+        quantity: 1,
+        timestamp: '2026-10-03T10:00:00'
+      })
+
+      // Log occurrence in future (2026-10-11, outside window)
+      await store.logOccurrence({
+        eventTypeId: eventType.id,
+        quantity: 1,
+        timestamp: '2026-10-11T10:00:00'
+      })
+
+      const trend = store.sevenDayTrend(refDate)
+
+      // Total points across the 7-day window (Oct 4 to Oct 10) should be 0
+      const totalPointsInWindow = trend.reduce((sum, day) => sum + day.totalPoints, 0)
+      const totalCountInWindow = trend.reduce((sum, day) => sum + day.occurrenceCount, 0)
+
+      expect(totalPointsInWindow).toBe(0)
+      expect(totalCountInWindow).toBe(0)
+    })
+  })
 })
 
