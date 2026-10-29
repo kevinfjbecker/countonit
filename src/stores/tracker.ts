@@ -19,13 +19,7 @@ import type {
 import type { StorageAdapter, AppStatePayload } from '@/types/storage'
 import { STORAGE_KEY_APP_STATE, createDefaultStorageAdapter } from '@/storage'
 import { buildStarterSeed } from './seed'
-
-function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  return 'id-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now()
-}
+import { generateId } from '@/utils/id'
 
 export function getLocalDateString(isoOrDate: string | Date = new Date()): string {
   const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate

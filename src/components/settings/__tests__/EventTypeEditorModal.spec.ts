@@ -165,6 +165,17 @@ describe('EventTypeEditorModal', () => {
     const boiledItem = updatedItems[3]
     expect(boiledItem.text()).toContain('Boiled Water')
     expect(boiledItem.text()).toContain('Default (+5 pts)')
+
+    // Add subtype via Enter key without submitting parent modal
+    await wrapper.find('[data-testid="add-subtype-btn"]').trigger('click')
+    const nameInput = wrapper.find('[data-testid="subtype-name-input"]')
+    await nameInput.setValue('Hot Water')
+    await nameInput.trigger('keydown.enter')
+
+    expect(wrapper.find('[data-testid="subtype-form"]').exists()).toBe(false)
+    // Parent modal should still be open (not submitted)
+    expect(wrapper.emitted('save')).toBeFalsy()
+    expect(wrapper.findAll('[data-testid^="subtype-item-"]')).toHaveLength(5)
   })
 
   it('allows editing and deleting an existing subtype', async () => {

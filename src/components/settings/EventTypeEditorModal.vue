@@ -13,6 +13,7 @@ import {
   Layers
 } from 'lucide-vue-next'
 import type { EventType, TaxonomyNode, ColorBadge, CreateEventTypeDto, Subtype } from '@/types/domain'
+import { generateId } from '@/utils/id'
 
 interface Props {
   modelValue: boolean
@@ -82,29 +83,22 @@ const subtypePointOverride = ref<number | ''>('')
 const subtypeQuantityOverride = ref<number | ''>('')
 const subtypeErrorMessage = ref('')
 
-function generateSubtypeId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  return 'sub-' + Math.random().toString(36).substring(2, 9) + '-' + Date.now()
-}
-
-function openAddSubtypeForm() {
+function resetSubtypeInputs() {
   editingSubtypeId.value = null
   subtypeName.value = ''
   subtypePointOverride.value = ''
   subtypeQuantityOverride.value = ''
   subtypeErrorMessage.value = ''
+}
+
+function openAddSubtypeForm() {
+  resetSubtypeInputs()
   isSubtypeFormOpen.value = true
 }
 
 function cancelSubtypeForm() {
   isSubtypeFormOpen.value = false
-  editingSubtypeId.value = null
-  subtypeName.value = ''
-  subtypePointOverride.value = ''
-  subtypeQuantityOverride.value = ''
-  subtypeErrorMessage.value = ''
+  resetSubtypeInputs()
 }
 
 function editSubtype(sub: Subtype) {
@@ -178,7 +172,7 @@ function saveSubtype() {
     }
   } else {
     subtypes.value.push({
-      id: generateSubtypeId(),
+      id: generateId('sub'),
       name: trimmed,
       pointOverride,
       quantityOverride
@@ -557,6 +551,7 @@ function handleSubmit() {
                 type="text"
                 placeholder="e.g. Decaf, Espresso, Diamond"
                 class="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                @keydown.enter.prevent="saveSubtype"
               />
             </div>
 
@@ -574,6 +569,7 @@ function handleSubmit() {
                   step="1"
                   :placeholder="`Default (${basePoints !== '' ? basePoints : 1})`"
                   class="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  @keydown.enter.prevent="saveSubtype"
                 />
               </div>
 
@@ -590,6 +586,7 @@ function handleSubmit() {
                   step="any"
                   :placeholder="`Default (${defaultIncrement || 1})`"
                   class="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  @keydown.enter.prevent="saveSubtype"
                 />
               </div>
             </div>
