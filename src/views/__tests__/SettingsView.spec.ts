@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import SettingsView from '../SettingsView.vue'
 import { useTrackerStore } from '@/stores/tracker'
 import { InMemoryStorageAdapter } from '@/storage/InMemoryStorageAdapter'
+import QuantityStepperModal from '@/components/events/QuantityStepperModal.vue'
 
 describe('SettingsView - Event Type Management', () => {
   let store: ReturnType<typeof useTrackerStore>
@@ -97,5 +98,50 @@ describe('SettingsView - Event Type Management', () => {
     expect(water?.basePoints).toBe(7)
 
     expect(wrapper.text()).toContain('Sparkling Water')
+  })
+
+  it('saves configured subtypes from editor and renders them immediately in quick-log sheet', async () => {
+    const wrapper = mount(SettingsView)
+
+    // Find the edit button for 'Cup of Coffee'
+    const coffeeItem = wrapper.findAllComponents({ name: 'EventTypeListItem' })
+      .find(c => c.props('eventType').id === 'seed-et-coffee')
+    expect(coffeeItem).toBeDefined()
+    const editBtn = coffeeItem!.find('[data-testid="edit-event-type-btn"]')
+    await editBtn.trigger('click')
+
+    // Modal should be open with existing coffee subtypes
+    expect(wrapper.find('[data-testid="editor-modal"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="subtype-item-seed-sub-espresso"]').exists()).toBe(true)
+
+    // Add new subtype "Decaf" with 1 pt override
+    await wrapper.find('[data-testid="add-subtype-btn"]').trigger('click')
+    await wrapper.find('[data-testid="subtype-name-input"]').setValue('Decaf')
+    await wrapper.find('[data-testid="subtype-points-input"]').setValue(1)
+    await wrapper.find('[data-testid="subtype-quantity-input"]').setValue(1)
+    await wrapper.find('[data-testid="save-subtype-btn"]').trigger('click')
+
+    // Save event type
+    await wrapper.find('form').trigger('submit.prevent')
+
+    // Verify store has the updated subtypes
+    const updatedCoffee = store.eventTypes.find(e => e.id === 'seed-et-coffee')!
+    expect(updatedCoffee.subtypes).toHaveLength(3)
+    const decafSubtype = updatedCoffee.subtypes?.find(s => s.name === 'Decaf')
+    expect(decafSubtype).toBeDefined()
+    expect(decafSubtype?.pointOverride).toBe(1)
+
+    // Render Quick-Log sheet (QuantityStepperModal) with updated event type
+    const quickLogWrapper = mount(QuantityStepperModal, {
+      props: {
+        modelValue: true,
+        eventType: updatedCoffee
+      }
+    })
+
+    // Quick-Log sheet should render the Decaf subtype button immediately
+    expect(quickLogWrapper.find(`[data-testid="subtype-option-${decafSubtype!.id}"]`).exists()).toBe(true)
+    expect(quickLogWrapper.text()).toContain('Decaf')
+    expect(quickLogWrapper.text()).toContain('+1 pts')
   })
 })

@@ -4,9 +4,15 @@ import * as icons from 'lucide-vue-next'
 import {
   X,
   Check,
-  Activity
+  Activity,
+  Plus,
+  Trash2,
+  Pencil,
+  ArrowUp,
+  ArrowDown,
+  Layers
 } from 'lucide-vue-next'
-import type { EventType, TaxonomyNode, ColorBadge, CreateEventTypeDto } from '@/types/domain'
+import type { EventType, TaxonomyNode, ColorBadge, CreateEventTypeDto, Subtype } from '@/types/domain'
 
 interface Props {
   modelValue: boolean
@@ -67,6 +73,129 @@ const defaultIncrement = ref<number>(1)
 const targetFrequency = ref<number | null>(null)
 const taxonomyNodeId = ref<string | null>(null)
 
+// Subtypes / Presets
+const subtypes = ref<Subtype[]>([])
+const isSubtypeFormOpen = ref(false)
+const editingSubtypeId = ref<string | null>(null)
+const subtypeName = ref('')
+const subtypePointOverride = ref<number | ''>('')
+const subtypeQuantityOverride = ref<number | ''>('')
+const subtypeErrorMessage = ref('')
+
+function generateSubtypeId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'sub-' + Math.random().toString(36).substring(2, 9) + '-' + Date.now()
+}
+
+function openAddSubtypeForm() {
+  editingSubtypeId.value = null
+  subtypeName.value = ''
+  subtypePointOverride.value = ''
+  subtypeQuantityOverride.value = ''
+  subtypeErrorMessage.value = ''
+  isSubtypeFormOpen.value = true
+}
+
+function cancelSubtypeForm() {
+  isSubtypeFormOpen.value = false
+  editingSubtypeId.value = null
+  subtypeName.value = ''
+  subtypePointOverride.value = ''
+  subtypeQuantityOverride.value = ''
+  subtypeErrorMessage.value = ''
+}
+
+function editSubtype(sub: Subtype) {
+  editingSubtypeId.value = sub.id
+  subtypeName.value = sub.name
+  subtypePointOverride.value = sub.pointOverride !== null && sub.pointOverride !== undefined ? sub.pointOverride : ''
+  subtypeQuantityOverride.value = sub.quantityOverride !== null && sub.quantityOverride !== undefined ? sub.quantityOverride : ''
+  subtypeErrorMessage.value = ''
+  isSubtypeFormOpen.value = true
+}
+
+function deleteSubtype(id: string) {
+  subtypes.value = subtypes.value.filter(s => s.id !== id)
+  if (editingSubtypeId.value === id) {
+    cancelSubtypeForm()
+  }
+}
+
+function moveSubtypeUp(index: number) {
+  if (index <= 0 || index >= subtypes.value.length) return
+  const item = subtypes.value[index]
+  subtypes.value.splice(index, 1)
+  subtypes.value.splice(index - 1, 0, item)
+}
+
+function moveSubtypeDown(index: number) {
+  if (index < 0 || index >= subtypes.value.length - 1) return
+  const item = subtypes.value[index]
+  subtypes.value.splice(index, 1)
+  subtypes.value.splice(index + 1, 0, item)
+}
+
+function saveSubtype() {
+  const trimmed = subtypeName.value.trim()
+  if (!trimmed) {
+    subtypeErrorMessage.value = 'Subtype name is required'
+    return
+  }
+
+  let pointOverride: number | null = null
+  if (subtypePointOverride.value !== '') {
+    const pts = Number(subtypePointOverride.value)
+    if (!Number.isInteger(pts)) {
+      subtypeErrorMessage.value = 'Point override must be an integer'
+      return
+    }
+    pointOverride = pts
+  }
+
+  let quantityOverride: number | null = null
+  if (subtypeQuantityOverride.value !== '') {
+    const qty = Number(subtypeQuantityOverride.value)
+    if (isNaN(qty) || qty <= 0) {
+      subtypeErrorMessage.value = 'Quantity override must be a positive number'
+      return
+    }
+    quantityOverride = qty
+  }
+
+  subtypeErrorMessage.value = ''
+
+  if (editingSubtypeId.value) {
+    const index = subtypes.value.findIndex(s => s.id === editingSubtypeId.value)
+    if (index !== -1) {
+      subtypes.value[index] = {
+        ...subtypes.value[index],
+        name: trimmed,
+        pointOverride,
+        quantityOverride
+      }
+    }
+  } else {
+    subtypes.value.push({
+      id: generateSubtypeId(),
+      name: trimmed,
+      pointOverride,
+      quantityOverride
+    })
+  }
+
+  cancelSubtypeForm()
+}
+
+function getSubtypePointsDisplay(sub: Subtype): string {
+  if (sub.pointOverride !== undefined && sub.pointOverride !== null) {
+    return sub.pointOverride > 0 ? `+${sub.pointOverride} pts` : `${sub.pointOverride} pts`
+  }
+  const parentPts = typeof basePoints.value === 'number' ? basePoints.value : 1
+  return `Default (${parentPts > 0 ? `+${parentPts}` : parentPts} pts)`
+}
+
 // Validation errors
 const errorMessage = ref('')
 
@@ -82,6 +211,7 @@ function resetForm() {
     defaultIncrement.value = props.eventType.defaultIncrement ?? 1
     targetFrequency.value = props.eventType.targetFrequency ?? null
     taxonomyNodeId.value = props.eventType.taxonomyNodeId ?? null
+    subtypes.value = props.eventType.subtypes ? props.eventType.subtypes.map(s => ({ ...s })) : []
   } else {
     name.value = ''
     icon.value = 'Activity'
@@ -91,7 +221,9 @@ function resetForm() {
     defaultIncrement.value = 1
     targetFrequency.value = null
     taxonomyNodeId.value = null
+    subtypes.value = []
   }
+  cancelSubtypeForm()
   errorMessage.value = ''
 }
 
@@ -140,7 +272,8 @@ function handleSubmit() {
     defaultUnit: defaultUnit.value.trim() || 'times',
     defaultIncrement: defaultIncrement.value ? Math.max(1, Math.round(Number(defaultIncrement.value))) : 1,
     targetFrequency: targetFrequency.value ? Math.max(1, Math.round(Number(targetFrequency.value))) : null,
-    taxonomyNodeId: taxonomyNodeId.value || null
+    taxonomyNodeId: taxonomyNodeId.value || null,
+    subtypes: subtypes.value.map(s => ({ ...s }))
   })
 
   emit('update:modelValue', false)
@@ -357,6 +490,216 @@ function handleSubmit() {
               {{ node.name }}
             </option>
           </select>
+        </div>
+
+        <!-- 7. Subtypes / Presets Management Section -->
+        <div data-testid="subtypes-section" class="space-y-2.5 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <Layers class="w-4 h-4 text-indigo-500" />
+              <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Subtypes / Presets
+              </label>
+              <span class="text-[11px] font-medium text-slate-400">({{ subtypes.length }})</span>
+            </div>
+
+            <button
+              v-if="!isSubtypeFormOpen"
+              type="button"
+              data-testid="add-subtype-btn"
+              class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer"
+              @click="openAddSubtypeForm"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Add Subtype</span>
+            </button>
+          </div>
+
+          <!-- Add / Edit Subtype Form -->
+          <div
+            v-if="isSubtypeFormOpen"
+            data-testid="subtype-form"
+            class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-3"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                {{ editingSubtypeId ? 'Edit Subtype' : 'New Subtype / Preset' }}
+              </span>
+              <button
+                type="button"
+                data-testid="cancel-subtype-btn"
+                aria-label="Cancel subtype"
+                class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-md transition-colors cursor-pointer"
+                @click="cancelSubtypeForm"
+              >
+                <X class="w-4 h-4" />
+              </button>
+            </div>
+
+            <!-- Subtype Error Banner -->
+            <div
+              v-if="subtypeErrorMessage"
+              data-testid="subtype-error"
+              class="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-[11px] font-semibold text-rose-700 dark:text-rose-300"
+            >
+              {{ subtypeErrorMessage }}
+            </div>
+
+            <!-- Subtype Name Field -->
+            <div class="space-y-1">
+              <label for="subtype-name-input" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                Subtype Name <span class="text-rose-500">*</span>
+              </label>
+              <input
+                id="subtype-name-input"
+                v-model="subtypeName"
+                data-testid="subtype-name-input"
+                type="text"
+                placeholder="e.g. Decaf, Espresso, Diamond"
+                class="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <!-- Subtype Overrides Grid -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="space-y-1">
+                <label for="subtype-points-input" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Point Override (optional)
+                </label>
+                <input
+                  id="subtype-points-input"
+                  v-model.number="subtypePointOverride"
+                  data-testid="subtype-points-input"
+                  type="number"
+                  step="1"
+                  :placeholder="`Default (${basePoints !== '' ? basePoints : 1})`"
+                  class="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <label for="subtype-quantity-input" class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                  Default Quantity (optional)
+                </label>
+                <input
+                  id="subtype-quantity-input"
+                  v-model.number="subtypeQuantityOverride"
+                  data-testid="subtype-quantity-input"
+                  type="number"
+                  min="0.01"
+                  step="any"
+                  :placeholder="`Default (${defaultIncrement || 1})`"
+                  class="w-full px-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                @click="cancelSubtypeForm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                data-testid="save-subtype-btn"
+                class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+                @click="saveSubtype"
+              >
+                {{ editingSubtypeId ? 'Update Subtype' : 'Add Subtype' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div
+            v-if="subtypes.length === 0"
+            data-testid="subtypes-empty"
+            class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-700 text-center"
+          >
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              No subtypes configured. Presets allow quick logging with point/quantity overrides (e.g. Espresso vs Cold Brew).
+            </p>
+          </div>
+
+          <!-- Subtypes List -->
+          <div v-else class="space-y-1.5">
+            <div
+              v-for="(sub, index) in subtypes"
+              :key="sub.id"
+              :data-testid="`subtype-item-${sub.id}`"
+              class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-xs"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-medium text-slate-800 dark:text-slate-200 truncate">
+                  {{ sub.name }}
+                </span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-semibold shrink-0">
+                  {{ getSubtypePointsDisplay(sub) }}
+                </span>
+                <span
+                  v-if="sub.quantityOverride !== undefined && sub.quantityOverride !== null"
+                  class="text-[10px] text-slate-500 dark:text-slate-400 shrink-0"
+                >
+                  Qty: {{ sub.quantityOverride }}
+                </span>
+              </div>
+
+              <!-- Item Actions -->
+              <div class="flex items-center gap-1 shrink-0 ml-2">
+                <button
+                  type="button"
+                  :data-testid="`move-up-subtype-${sub.id}`"
+                  :aria-label="`Move ${sub.name} up`"
+                  :disabled="index === 0"
+                  :class="[
+                    'p-1 rounded-md transition-colors',
+                    index === 0
+                      ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed opacity-40'
+                      : 'text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer'
+                  ]"
+                  @click="moveSubtypeUp(index)"
+                >
+                  <ArrowUp class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  :data-testid="`move-down-subtype-${sub.id}`"
+                  :aria-label="`Move ${sub.name} down`"
+                  :disabled="index === subtypes.length - 1"
+                  :class="[
+                    'p-1 rounded-md transition-colors',
+                    index === subtypes.length - 1
+                      ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed opacity-40'
+                      : 'text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer'
+                  ]"
+                  @click="moveSubtypeDown(index)"
+                >
+                  <ArrowDown class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  :data-testid="`edit-subtype-${sub.id}`"
+                  :aria-label="`Edit ${sub.name}`"
+                  class="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition-colors cursor-pointer"
+                  @click="editSubtype(sub)"
+                >
+                  <Pencil class="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  :data-testid="`delete-subtype-${sub.id}`"
+                  :aria-label="`Delete ${sub.name}`"
+                  class="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer"
+                  @click="deleteSubtype(sub.id)"
+                >
+                  <Trash2 class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Action Buttons -->

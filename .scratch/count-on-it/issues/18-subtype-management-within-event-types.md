@@ -4,12 +4,12 @@
 
 **Blocked by:** 17: Event Type Creator & Editor
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] "Subtypes / Presets" management section within the Event Type editor
-- [ ] Add Subtype modal/form specifying:
+- [x] "Subtypes / Presets" management section within the Event Type editor
+- [x] Add Subtype modal/form specifying:
   - Subtype Name
   - Point override (optional, defaults to parent Event Type points)
   - Default quantity override (optional)
-- [ ] List of configured Subtypes with delete and edit actions
-- [ ] Saves Subtypes with the Event Type and ensures quick-log sheet renders them immediately
+- [x] List of configured Subtypes with delete and edit actions
+- [x] Saves Subtypes with the Event Type and ensures quick-log sheet renders them immediately
